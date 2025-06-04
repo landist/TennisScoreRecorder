@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tennis Scoreboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+    h1 { margin-bottom: 10px; }
+    .scoreboard { display: flex; justify-content: space-around; margin-top: 20px; }
+    .player { border: 1px solid #ccc; padding: 15px; border-radius: 10px; width: 45%; }
+    .score { font-size: 1.5em; margin: 10px 0; }
+    button { padding: 10px 15px; margin: 5px; font-size: 16px; }
+    label { display: block; margin-top: 20px; font-weight: bold; }
+
+    .analytic-popup {
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 15px;
+      position: fixed;
+      top: 2%;
+      left: 10%;
+      right: 10%;
+      z-index: 1000;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    }
+    .analytic-form {
+      display: flex;
+      justify-content: space-between;
+      gap: 40px;
+      margin-top: 10px;
+    }
+
+    .popup {
+      position: fixed;
+      top: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      background: white;
+      border: 2px solid #444;
+      padding: 20px;
+      z-index: 1000;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      display: none;
+    }
+
+    .popup-content {
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    #statsTable tr:nth-child(even) {
+      background-color: #f0f0f0; /* Light grey */
+    }
+    #statsTable tr:nth-child(odd) {
+      background-color: #ffffff; /* White */
+    }
+
+    #pointHistoryTable {
+      width: 100%;
+      text-align: left;
+      margin-top: 10px;
+    }
+    #pointHistoryTable td {
+      padding: 6px;
+      border-bottom: 1px solid #ccc;
+    }
+    #pointHistoryTable tr:nth-child(even) {
+      background-color: #f0f0f0; /* Light grey */
+    }
+    #pointHistoryTable tr:nth-child(odd) {
+      background-color: #ffffff; /* White */
+    }
+
+    /*
+    #resetConfirmPopup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+
+      background-color: white;
+      padding: 20px;
+      border: 2px solid #444;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+      z-index: 9999;
+
+      display: none; ///\* Hidden by default 
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    */
+
+    .popup-modal {
+      position: fixed;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      border: 1px solid #888;
+      padding: 20px;
+      z-index: 1001;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+    }
+
+    .popup-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+    }
+
+
+  </style>
+</head>
+
+<body>
+  <h1>Tennis Match Score
+      <span id="versionDisplay" style="font-size: 0.6em; font-weight: normal; margin-left: 0.5em; color: #555;"></span>
+  </h1>
+
+  <div id="setHistory" style="margin-top: 20px; font-weight: bold;">
+    <h2>Set History: <span id="setHistoryText">None</span></h2>
+  </div>
+
+<div id="match-conditions" style="display: flex; flex-direction: column; align-items: center; gap: 1em; margin-bottom: 1.5em;">
+  <!-- Row 1: Court Type -->
+  <div style="display: flex; align-items: center; gap: 1em; flex-wrap: wrap; justify-content: center;">
+    <label><input type="checkbox" name="court" value="clay"> Clay</label>
+    <label><input type="checkbox" name="court" value="turf"> Turf</label>
+    <label><input type="checkbox" name="court" value="hard"> Hard</label>
+    <label><input type="checkbox" name="court" value="grass"> Grass</label>
+  </div>
+  <!-- Row 2: Location -->
+  <div style="display: flex; align-items: center; gap: 1em; flex-wrap: wrap; justify-content: center;">
+    <label><input type="checkbox" name="location" value="indoor"> Indoor</label>
+    <label><input type="checkbox" name="location" value="outdoor"> Outdoor</label>
+  </div>
+  <!-- Row 3: Weather -->
+  <div style="display: flex; align-items: center; gap: 1em; flex-wrap: wrap; justify-content: center;">
+    <label><input type="checkbox" name="weather" value="sunny"> Sunny</label>
+    <label><input type="checkbox" name="weather" value="rainy"> Rainy</label>
+    <label><input type="checkbox" name="weather" value="windy"> Windy</label>
+    <label><input type="checkbox" name="weather" value="cloudy"> Cloudy</label>
+    <label><input type="checkbox" name="weather" value="hot"> Hot</label>
+    <label><input type="checkbox" name="weather" value="warm"> Warm</label>
+    <label><input type="checkbox" name="weather" value="cold"> Cold</label>
+  </div>
+</div>
+
+<div style="text-align: center; margin-bottom: 10px;">
+  <label>Player 1 Name: <input type="text" id="player1NameInput" placeholder="Player 1"></label>
+  <label>Player 2 Name: <input type="text" id="player2NameInput" placeholder="Player 2"></label>
+  <button onclick="setPlayerNames()">Update Names</button>
+</div>
+
+
+<div id="first-server-selection" style="
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1em;
+  margin-bottom: 1em;
+  flex-wrap: wrap;
+">
+  <b><h2>Select First Server to start recording</h2></b>
+  <!-- 
+  <label><input type="radio" name="firstServer" value="p1"> Player 1</label>
+  <label><input type="radio" name="firstServer" value="p2"> Player 2</label>
+  -->
+  <input type="radio" id="firstServerP1" name="firstServer" value="p1">
+  <label for="firstServerP1" id="labelFirstServerP1">Player 1</label>
+  <input type="radio" id="firstServerP2" name="firstServer" value="p2">
+  <label for="firstServerP2" id="labelFirstServerP2">Player 2</label>
+</div>
+
+<label>
+    <h2><input type="checkbox" id="deuceToggle" onchange="saveSettings()"> Enable Deuce/Advantage rules</h2>
+</label>
+
+<div style="margin: 20px 0;">
+  <label><h2><input type="checkbox" id="tiebreakToggle" onchange="toggleTiebreak()"> Enable Tiebreak Mode</h2></label>
+  <select id="tiebreakLength" onchange="saveSettings()">
+    <option value="7">7-Point Tiebreak</option>
+    <option value="10">10-Point Tiebreak</option>
+  </select>
+</div>
+
+<div style="text-align: center; margin-bottom: 1em;">
+    <label>
+      <h2><input type="checkbox" id="analyticModeToggle"> Analytic Mode </h2>
+    </label>
+</div>
+
+
+  <div class="scoreboard">
+    <div class="player"> 
+      <h2 id="player1ScoreLabel">Player 1</h2>
+      <div class="score">Points: <span id="p1Points">0</span></div>
+      <div class="score">Games: <span id="p1Games">0</span></div>
+      <div class="score">Sets: <span id="p1Sets">0</span></div>
+      <button id="add-point-p1" onclick="addPoint('p1')">+ Point</button>
+      <!-- <button onclick="resetPlayer(1)">Reset</button>  -->
+    </div>
+    <div class="player" >
+      <h2 id="player2ScoreLabel">Player 2</h2>
+      <div class="score">Points: <span id="p2Points">0</span></div>
+      <div class="score">Games: <span id="p2Games">0</span></div>
+      <div class="score">Sets: <span id="p2Sets">0</span></div>
+      <button id="add-point-p2" onclick="addPoint('p2')">+ Point</button>
+      <!-- <button onclick="resetPlayer(2)">Reset</button> -->
+    </div>
+  </div>
+
+  <div class="button-row">
+    <button onclick="showStatsPopup()">Show Analytics</button>
+    <button id="togglePointHistoryBtn" onclick="togglePointHistory()">Show Point History</button>
+    <button onclick="exportCSV()">📄 Export CSV</button>
+  </div>
+  <div class="button-row">
+    <button onclick="clickUndoLastPoint()">Undo Last Point</button>
+    <button onclick="recordSet()" style="margin-top: 20px;">Start New Set</button>
+    <button onclick="clickResetAll()" style="margin-top: 10px;">Reset All</button>
+  </div>
+
+  <h2>Game Point History</h2>
+  <table id="gameHistoryTable" border="1" style="width:100%; text-align: center; margin-top: 1rem;">
+    <thead>
+      <tr id="gamePointHeaderRow">
+        <th>Game #</th>
+        <th >Player 1 Points</th>
+        <th >Player 2 Points</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Rows will be added here dynamically -->
+    </tbody>
+  </table>
+
+  <div id="statsPopup" class="popup" style="display: none;">
+    <div class="popup-content">
+      <h3>Match Statistics</h3>
+      <div id="statSummary" style="margin-bottom: 10px; font-weight: bold;"></div>
+      <table id="statsTable" border="1" style="width: 100%; text-align: center;">
+        <thead >
+          <tr id="statsTableHeaderRow">
+            <th>Stat</th>
+            <th>Player 1</th>
+            <th>Player 2</th>
+          </tr>
+        </thead>
+        <tbody id="statsTableBody">
+          <!-- Filled dynamically -->
+        </tbody>
+      </table>
+      <button onclick="closeStatsPopup()">Close</button>
+    </div>
+  </div>
+
+
+  <div id="analyticPopup" style="display:none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%);
+    background: #fff; border: 2px solid #333; padding: 1em; z-index: 1000; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+    <h3>Point Winner - </h3>
+    <p id="pointWinnerInfoText">Player X</p>
+    <h3>Game Server - </h3>
+    <p id="serveInfoText">Current Server</p>
+    <form id="analyticForm">   
+      <table>
+        <tr>
+          <td>
+            <label><input type="checkbox" name="serveType" value="First Serve"> 1st Serve</label><br>
+            <label><input type="checkbox" name="loseReason" value="Unforced Error"> Unforced Error</label><br>
+            <label><input type="checkbox" name="winReason" value="Short Rally"> Short Rally</label><br>
+            <label><input type="checkbox" name="winReason" value="Winner"> Winner</label><br>
+            <label><input type="checkbox" name="strokeTech" value="Net"> Net</label><br>
+          </td>
+          <td>
+            <label><input type="checkbox" name="serveType" value="Second Serve"> 2nd Serve</label><br>
+            <label><input type="checkbox" name="loseReason" value="Forced Error"> Forced Error</label><br>
+            <label><input type="checkbox" name="winReason" value="Long Rally"> Long Rally</label>
+            <label><input type="checkbox" name="strokeTech" value="FH"> FH</label><br>
+            <label><input type="checkbox" name="strokeTech" value="Slice"> Slice</label><br>
+          </td>
+          <td>
+            <label><input type="checkbox" name="serveType" value="Double Fault"> Double Fault</label><br>
+            <label><input type="checkbox" name="loseReason" value="ReturnServe Error" id="returnServeErrorCheckbox"> ReturnServe Error</label><br>
+            <label><input type="checkbox" name="winReason" value="Ace" id="AceCheckbox"> Ace</label><br>
+            <label><input type="checkbox" name="strokeTech" value="BH"> BH</label><br>
+            <label><input type="checkbox" name="strokeTech" value="Smash"> Smash</label><br>
+
+          </td>
+        </tr>
+      </table> 
+      <div style="text-align: center; margin-top: 1em;">
+        <button type="button" onclick="confirmAnalyticPoint()">Confirm</button>
+        <!-- <button type="button" onclick="cancelAnalyticPopup()">Cancel</button> -->
+      </div>
+    </form>
+  </div>
+
+
+  <div id="pointHistoryContainer" style="display: none; margin-top: 15px;">
+    <table id="pointHistoryTable" border="1" cellpadding="5" cellspacing="0">
+      <thead>
+        <tr>
+          <h2>Point by Point History</h2>
+        </tr>
+      </thead>
+      <tbody id="pointHistoryTableBody"></tbody>
+    </table>
+  </div>
+
+  <!--
+  <div id="resetConfirmPopup" class="popup-overlay" style="display: none;">
+    <div class="popup-content">
+      <p>Reset to remove ALL data?</p>
+      <div class="popup-buttons">
+        <button id="confirmResetBtn">Reset All</button>
+        <button id="cancelResetBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+  -->
+
+  <!-- Backdrop -->
+  <div id="confirmPopupBackdrop" class="popup-backdrop" style="display: none;"></div>
+  <!-- Confirmation Popup -->
+  <div id="confirmPopup" class="popup-modal" style="display: none;">
+    <p id="confirmPopupMessage">Are you sure?</p>
+    <div style="margin-top: 10px;">
+      <button id="confirmPopupYesBtn">Confirm</button>
+      <button id="confirmPopupCancelBtn">Cancel</button>
+    </div>
+  </div>
+
+
+
+
+  <script>
+
+    let isTiebreak = false;
+	  let tiebreakTarget = 7;
+    const appVersion = "v2.0.0"; // or any version string you want
+    let undoStack =[];
+
+    const score = {
+      p1: { points: 0, games: 0, sets: 0, advantage: false, pointsWin: 0, totalWin:0 },
+      p2: { points: 0, games: 0, sets: 0, advantage: false, pointsWin: 0, totalWin:0},
+      setHistory: [],
+      gameHistory: [] , // Stores {p1Points, p2Points} per game
+      firstServer: null //getFirstServer()
+    };
+    let playerNames = {p1:'Player 1', p2:"Player 2"};
+    let useDeuce = true;
+    const pointLabels = [0, 15, 30, 40];
+
+    let pointHistory = [];
+    const analyticData = {
+      p1: {
+        //sets: [],     // array of per-set data
+        total: {}     // aggregated total across all sets
+      },
+      p2: {
+        //sets: [],
+        total: {}
+      },
+      totalRecords:0 // total recorded points
+    };
+
+
+    function setPlayerNames() {
+      const p1Input = document.getElementById("player1NameInput").value.trim();
+      const p2Input = document.getElementById("player2NameInput").value.trim();
+      playerNames['p1'] = p1Input || "Player 1";
+      playerNames['p2'] = p2Input || "Player 2";
+      updatePlayerLabels();
+    }
+
+    function updatePlayerLabels() {
+      //document.getElementById("player1Button").innerText = `+1 Point: ${player1Name}`;
+      //document.getElementById("player2Button").innerText = `+1 Point: ${player2Name}`;
+      document.getElementById("player1ScoreLabel").innerText = playerNames['p1'];
+      document.getElementById("player2ScoreLabel").innerText = playerNames['p2'];
+
+      // If other elements show player names (e.g., radio buttons, tables), update them here too.
+      // Update the Game Point History table header
+      //console.log("statsTable Header Row: ", document.getElementById("statsTableHeaderRow"));
+      const headerRow = document.getElementById("statsTableHeaderRow");
+      if (headerRow) {
+        headerRow.cells[1].innerText = `${playerNames['p1']}`;
+        headerRow.cells[2].innerText = `${playerNames['p2']}`;
+      } 
+      document.getElementById("labelFirstServerP1").innerText = playerNames['p1'] ;
+      document.getElementById("labelFirstServerP2").innerText = playerNames['p2'] ;
+    }
+
+
+    function save() {
+      localStorage.setItem('tennisScore', JSON.stringify(score));
+    }
+
+    function saveSettings() {
+        useDeuce = document.getElementById('deuceToggle').checked;
+        localStorage.setItem('tennisUseDeuce', useDeuce);
+
+        tiebreakTarget = parseInt(document.getElementById('tiebreakLength').value);
+        localStorage.setItem('tennisTiebreakTarget', tiebreakTarget);
+    }
+
+    function load() {
+        // Display app version
+        document.getElementById('versionDisplay').textContent = appVersion;
+        const saved = localStorage.getItem('tennisScore');
+        if (saved) Object.assign(score, JSON.parse(saved));
+
+        const setting = localStorage.getItem('tennisUseDeuce');
+        useDeuce = setting === null ? true : setting === "true";
+        document.getElementById('deuceToggle').checked = useDeuce;
+
+        const savedTiebreak = localStorage.getItem('tennisTiebreakTarget');
+        if (savedTiebreak) {
+            tiebreakTarget = parseInt(savedTiebreak);
+            document.getElementById('tiebreakLength').value = savedTiebreak;
+        }
+        document.getElementById('add-point-p1').disabled = true;
+        document.getElementById('add-point-p2').disabled = true;
+
+
+        updateUI();
+    }
+
+
+
+    function toggleTiebreak() {
+      isTiebreak = document.getElementById('tiebreakToggle').checked;
+      score.p1.points = 0;
+      score.p2.points = 0;
+      updateUI();
+    }
+
+    // expect player is string 'p1' or 'p2'
+    function incrementPoint(player){
+        const p = player === 'p1' ? 'p1' : 'p2';
+        const o = player === 'p1' ? 'p2' : 'p1';
+        //console.log("incrementPoint called with:", player); // Debug
+
+        score[p].pointsWin++;
+        score[p].totalWin++;
+        if (isTiebreak) {
+            score[p].points++;
+            if (
+            score[p].points >= tiebreakTarget &&
+            score[p].points - score[o].points >= 2
+            ) {
+            score[p].games++;
+            score.gameHistory.push({
+            p1Points: score.p1.pointsWin,
+            p2Points: score.p2.pointsWin,
+            isTiebreak: true
+            });
+            recordSet();
+            isTiebreak = false;
+            document.getElementById('tiebreakToggle').checked = false;
+            }
+        } else if (!useDeuce) {
+            score[p].points++;
+            if (score[p].points > 3) {
+            winGame(p);
+            }
+        } else {
+            if (score[p].points < 3) {
+            score[p].points++;
+            } else {
+            if (score[o].points < 3) {
+                winGame(p);
+            } else if (!score[p].advantage && !score[o].advantage) {
+                score[p].advantage = true;
+            } else if (score[p].advantage) {
+                winGame(p);
+            } else if (score[o].advantage) {
+                score[o].advantage = false;
+            }
+            }
+        }
+
+        updateUI();
+        save();
+    }
+
+    function saveToUndoStack() {
+      const snapshot = {
+        scoreSnapshot: structuredClone(score),
+        analyticSnapshot: structuredClone(analyticData) ,
+        pointHistorySnapshot: structuredClone(pointHistory)
+      };
+      undoStack.push(snapshot);
+    }
+
+    function undoLastPoint() {
+      if (undoStack.length === 0) {
+        console.log("Undo stack is empty.");
+        return;
+      }
+      const lastState = undoStack.pop();
+      // Restore score (replace fields, since score is declared with const)
+      Object.keys(score).forEach(key => delete score[key]);
+      Object.assign(score, structuredClone(lastState.scoreSnapshot));
+
+      // Restore analyticData
+      Object.keys(analyticData).forEach(key => delete analyticData[key]);
+      Object.assign(analyticData, structuredClone(lastState.analyticSnapshot));
+
+      // Restore pointHistory
+      //pointHistory.pop(); //cause potential user bug when analytic mode is on and off during match recording
+      pointHistory.length = 0;
+      pointHistory.push(...structuredClone(lastState.pointHistorySnapshot));
+
+      // Refresh UI after restore
+      updateGameHistoryTable();
+      updateUI();
+      //updateSetHistoryDisplay();
+      console.log("State restored from undo.");
+    }
+
+
+    function addPoint(player) {
+        saveToUndoStack();
+        const analyticMode = document.getElementById('analyticModeToggle').checked;
+        if (analyticMode) {
+            showAnalyticPopup(player);
+            return;
+        }
+        incrementPoint(player);
+    }
+
+    // Dynamically set "Serve Info" text based on server and selected serve type
+    function updateServeInfoText() {
+        const server = getCurrentServer(); // You should already have logic for this
+        const playerText = server === 'p1' ? playerNames['p1'] : playerNames['p2']; //"Player 1" : "Player 2";
+        document.getElementById('serveInfoText').textContent = `${playerText}`;
+    }
+
+    function getCurrentServer() {
+      const gamesPlayed = score.gameHistory.length;
+      if (!score || !Array.isArray(score.gameHistory)) {
+        console.error("Score object or game history is missing.");
+        return null;
+      }
+      if (!score.firstServer) {
+        console.error("Error: firstServer has not been set. Cannot determine current server.");
+        return null;
+      }
+      if (! isTiebreak) {// Serving alternates every game, usual mode, not in Tiebreak mode
+        if (gamesPlayed % 2 === 0) {
+          return score.firstServer; // Same as first server on even-numbered games
+        } else {
+          return score.firstServer === 'p1' ? 'p2' : 'p1';
+        }
+      } else { // in Tiebreak mode
+        let tieBreak_firstServer = null;
+        if (gamesPlayed % 2 === 0) { tieBreak_firstServer = score.firstServer; }
+        else { tieBreak_firstServer = (score.firstServer === 'p1' ? 'p2' : 'p1'); }
+        let tieBreak_ptotal = score.p1.points + score.p2.points;
+        if (tieBreak_ptotal ===0) {return tieBreak_firstServer;}
+        const rotationIndex = Math.floor((tieBreak_ptotal - 1) / 2);
+        const isFirstServerTurn = rotationIndex % 2 === 0;
+        //console.log("rotationIndex ", rotationIndex, " isFirstServerTurn ", isFirstServerTurn );
+        let tieBreak_cur = (isFirstServerTurn ? (tieBreak_firstServer === 'p1' ? 'p2' : 'p1') : tieBreak_firstServer);
+        //console.log("Tiebreak current Server is ", tieBreak_cur);
+        return tieBreak_cur;
+      }
+    }
+
+    function togglePointHistory() {
+      const container = document.getElementById("pointHistoryContainer");
+      const button = document.getElementById("togglePointHistoryBtn");
+
+      if (container.style.display === "none") {
+        container.style.display = "block";
+        button.textContent = "Hide Point History";
+        renderPointHistoryTable(); // Optional: refresh data
+      } else {
+        container.style.display = "none";
+        button.textContent = "Show Point History";
+      }
+    }
+
+    function HidePointHistory(){
+      const container = document.getElementById("pointHistoryContainer");
+      const button = document.getElementById("togglePointHistoryBtn");
+      if (container.style.display === "block") {
+        container.style.display = "none";
+        button.textContent = "Show Point History";
+      }
+    }
+
+
+    function renderPointHistoryTable() {
+      const tbody = document.getElementById("pointHistoryTableBody");
+      tbody.innerHTML = ""; // Clear table
+      pointHistory.forEach(p => {
+        const row = document.createElement("tr");
+        const winner = p.winner === 'p1' ? playerNames['p1'] : playerNames['p2']; //'Player 1' : 'Player 2';
+        const loser = p.winner === 'p1' ? playerNames['p2'] : playerNames['p1']; //'Player 2' : 'Player 1';
+        const server = p.server === 'p1' ? playerNames['p1'] : playerNames['p2']; //'Player 1' : 'Player 2';
+        let TB = p.tiebreak === false ? "" : "(TB)";
+        let point_description; 
+        if ( p.reasonWin.includes("Winner")) {
+          point_description = `PointNumber ${p.pointNumber}, Set ${p.set}, Game ${p.game}${TB}, ${server} Serve, ${p.serveType}, ${winner} wins, ${p.reasonWin}, ${p.stroke}`;
+        }else{
+          point_description = `PointNumber ${p.pointNumber}, Set ${p.set}, Game ${p.game}${TB}, ${server} Serve, ${p.serveType}, ${winner} wins, ${p.reasonWin}, ${loser} ${p.reasonLose}, ${p.stroke}`;
+        }
+        const cell = document.createElement("td");
+        cell.textContent = point_description;
+        row.appendChild(cell);
+        tbody.appendChild(row);
+      });
+    }
+
+
+
+
+
+    //p in string 'p1' or 'p2'
+    function showAnalyticPopup(p) {
+        // Update Point Winner Text
+        //const playerText = p === 'p1' ? "Player 1" : "Player 2";
+        const playerText = p === 'p1' ? playerNames['p1'] : playerNames['p2'];
+        document.getElementById('pointWinnerInfoText').textContent = `${playerText}`;
+
+        //updateServeInfoText();
+        const server = getCurrentServer(); // You should already have logic for this
+        const playerText2 = server === 'p1' ? playerNames['p1'] : playerNames['p2']; //"Player 1" : "Player 2";
+        document.getElementById('serveInfoText').textContent = `${playerText2}`;
+
+        const returnServeCheckbox = document.getElementById("returnServeErrorCheckbox");
+        const AceCheckbox = document.getElementById("AceCheckbox");
+        if (!returnServeCheckbox || !AceCheckbox) {
+          console.error("ReturnServe Error or Ace checkbox not found!");
+          return;
+        }
+        // Enable only if the winner is the server
+        if (p === server) {
+          returnServeCheckbox.disabled = false;
+          AceCheckbox.disabled = false;
+        } else {
+          returnServeCheckbox.checked = false; // Uncheck if disabling
+          returnServeCheckbox.disabled = true;
+          AceCheckbox.checked = false; // Uncheck if disabling
+          AceCheckbox.disabled = true;
+        }
+        /*try {
+          updateServeInfoText();
+        } catch (error) {
+          console.error("Error in updateServeInfoText:", error);
+        }*/
+        document.getElementById('analyticPopup').style.display = 'block';
+        setMainButtonsDisabled(true);
+    }
+
+    /* function cancelAnalyticPopup() {
+      document.getElementById('analyticPopup').style.display = 'none';
+      setMainButtonsDisabled(false);
+    } */
+
+    function setMainButtonsDisabled(state) {
+        // Disable all main match-related buttons
+        document.querySelectorAll('button').forEach(btn => {
+            if (!btn.closest('#analyticPopup')) {
+            btn.disabled = state;
+            }
+        });
+        // Optionally disable other interactive controls like checkboxes, radios etc.
+        document.querySelectorAll('input[type="checkbox"]').forEach(el => {
+            if (!el.closest('#analyticPopup')) {
+            el.disabled = state;
+            }
+        });
+    }
+
+    function getWinnerIDFromPopup() {
+      const winnerText = document.getElementById("pointWinnerInfoText")?.textContent || "";
+      
+      if (winnerText.includes("Player 1") || winnerText.includes(playerNames['p1'])) return "p1";
+      if (winnerText.includes("Player 2") || winnerText.includes(playerNames['p2'])) return "p2";
+      
+      console.error("Could not determine winnerID from popup text:", winnerText);
+      return null;
+    }
+
+
+
+    function confirmAnalyticPoint() {
+        const selectedServeType = Array.from(document.querySelectorAll('input[name="serveType"]:checked')).map(cb => cb.value);
+        const winReasons = Array.from(document.querySelectorAll('input[name="winReason"]:checked')).map(cb => cb.value);
+        const loseReasons = Array.from(document.querySelectorAll('input[name="loseReason"]:checked')).map(cb => cb.value);
+        const strokeTech = Array.from(document.querySelectorAll('input[name="strokeTech"]:checked')).map(cb => cb.value);
+
+        //if (winReasons) console.log(`Winner Reasons: ${winReasons.join(', ')}`);
+        //if (loseReasons) console.log(`Loser Reasons: ${loseReasons.join(', ')}`);
+
+        const winnerID = getWinnerIDFromPopup(); //string 'p1' or 'p2'
+        if (!winnerID) {
+          alert("Error: Could not determine winner from popup.");
+          return;
+        }
+        //console.log("Capture winnerID from popup text:", winnerID);
+        const cur_server = getCurrentServer();
+        const cur_set = score.setHistory.length + 1;
+        const cur_game = score.gameHistory.length + 1
+        console.log(`isTiebreak = ${isTiebreak}`);
+        const cur_p = score.p1.totalWin + score.p2.totalWin + 1;
+        console.log("pointNumber =", cur_p);
+        const cur_point = {
+          pointNumber: cur_p,
+          setNumber: cur_set,
+          gameNumber: cur_game, // you need to track this in your app logic
+          tiebreak: isTiebreak, 
+          server: cur_server,          // returns 'p1' or 'p2'
+          serveType: selectedServeType,        // from checkbox
+          winner: winnerID,                    // 'p1' or 'p2'
+          reasonWin: winReasons,        // from checkbox
+          reasonLose: loseReasons,       // from checkbox
+          stroke: strokeTech               // from checkbox
+        }
+        recordPointDetail(cur_point);
+        addAnalyticData(cur_point);
+        // adjust point here when in analytical mode, after recordPoint due to the way it uses setHistory and gameHistory
+        incrementPoint(winnerID);
+
+        //printPointHistoryLog();
+        printLastPointHistoryLog()
+
+        document.getElementById('analyticPopup').style.display = 'none';
+        // Optionally reset checkboxes
+        document.querySelectorAll('#analyticForm input[type="checkbox"]').forEach(cb => cb.checked = false);
+        setMainButtonsDisabled(false);
+    }
+
+
+    function recordPointDetail({
+        pointNumber,
+        setNumber,
+        gameNumber,
+        tiebreak,
+        server,
+        serveType,
+        winner,
+        reasonWin,
+        reasonLose,
+        stroke
+        //pointScore  // e.g. "15–30"
+      }) {
+          console.log(tiebreak, serveType, reasonWin, reasonLose);
+          pointHistory.push({
+            pointNumber: pointNumber,
+            set: setNumber,
+            game: gameNumber,
+            tiebreak,
+            server,
+            serveType,
+            winner,
+            reasonWin,
+            reasonLose,
+            stroke
+            //pointScore
+          });
+    }
+
+    /* function initSetAnalytics() {
+      analyticData.p1.sets.push({});
+      analyticData.p2.sets.push({});
+    }*/
+
+
+    function addAnalyticData({
+        pointNumber,
+        setNumber,
+        gameNumber,
+        tiebreak,
+        server,
+        serveType,
+        winner,
+        reasonWin,
+        reasonLose,
+        stroke
+        //pointScore  // e.g. "15–30"
+      }) {
+          analyticData[server].total[serveType] = (analyticData[server].total[serveType] ||0) + 1;
+          analyticData.totalRecords ++;
+          if ( server === winner && serveType != "Double Fault"){
+            analyticData[server].total[serveType + ' Win'] = (analyticData[server].total[serveType + ' Win'] ||0) +1;
+          }
+          // Update winner's stat
+          if (reasonWin.length > 0){
+            if (reasonWin.includes('Winner') && stroke){
+              const winkey = "Winner-".concat(stroke.join('-'));
+              //console.log(winkey);
+              analyticData[winner].total[winkey] = (analyticData[winner].total[winkey]||0) +1;
+            }
+            reasonWin.forEach(reason=>{
+              analyticData[winner].total[reason] = (analyticData[winner].total[reason]||0) +1;
+            });
+          }
+          // Optionally: Track loser’s errors as well (comment out if not needed)
+          if (reasonLose.length > 0){
+            const loser = winner === 'p1' ? 'p2' : 'p1';
+            if ((reasonLose.includes('Unforced Error') ) && stroke){
+              const losekey = "Unforced Error-".concat(stroke.join('-'));
+              //console.log(losekey);
+              analyticData[loser].total[losekey] = (analyticData[loser].total[losekey]||0) +1;
+            } else if ((reasonLose.includes('Forced Error') ) && stroke){
+              const losekey = "Forced Error-".concat(stroke.join('-'));
+              //console.log(losekey);
+              analyticData[loser].total[losekey] = (analyticData[loser].total[losekey]||0) +1;
+            }
+            reasonLose.forEach(reason=>{
+              analyticData[loser].total[reason] = (analyticData[loser].total[reason]||0) +1;
+            });
+          }
+    }
+
+    function showStatsPopup() {
+      const summaryDiv = document.getElementById("statSummary");
+      const totalAnalytic = analyticData.totalRecords ;
+      const totalPoints = score.p1.totalWin + score.p2.totalWin;
+
+      summaryDiv.innerText = `Analytical Recorded: ${totalAnalytic} / Total Points Played: ${totalPoints}`;
+
+      const statsBody = document.getElementById('statsTableBody');
+      statsBody.innerHTML = ''; // Clear previous
+
+      const p1 = analyticData['p1'].total;
+      const p2 = analyticData['p2'].total;
+      p1_serve1_total = (p1["First Serve"] || 0) + (p1["Second Serve"] || 0) + (p1["Double Fault"] || 0);
+      p2_serve1_total = (p2["First Serve"] || 0) + (p2["Second Serve"] || 0) + (p2["Double Fault"] || 0);
+      p1_serve2_total = (p1["Second Serve"] || 0) + (p1["Double Fault"] || 0);
+      p2_serve2_total = (p2["Second Serve"] || 0) + (p2["Double Fault"] || 0);
+
+      const serveStats = [
+        { label: 'Total Point Win', value: [score.p1.totalWin , score.p2.totalWin]},
+        { label: 'First Serve', value:  [`${p1["First Serve"] || 0} / ${p1_serve1_total}`, `${p2["First Serve"] || 0} /  ${p2_serve1_total}`]}, 
+        { label: 'First Serve Win', value:  [`${p1["First Serve Win"] || 0} / ${p1["First Serve"] || 0}`, `${p2["First Serve Win"] || 0} / ${p2["First Serve"] || 0} `]},        
+        { label: 'Second Serve', value:  [`${p1["Second Serve"] || 0} / ${p1_serve2_total}`, `${p2["Second Serve"] || 0} / ${p2_serve2_total}`] },
+        { label: 'Second Serve Win', value:  [`${p1["Second Serve Win"] || 0} / ${p1["Second Serve"] || 0}`, `${p2["Second Serve Win"] || 0} / ${p2["Second Serve"] || 0}`] },  
+        { label: 'Double Fault', value: [p1["Double Fault"] || 0, p2["Double Fault"] || 0] },
+        { label: 'ReturnServe Error', value: [p1["ReturnServe Error"] || 0, p2["ReturnServe Error"] || 0] },
+        { label: 'Unforced Error', value: [p1["Unforced Error"] || 0, p2["Unforced Error"] || 0]},
+        { label: 'Forced Error', value: [p1["Forced Error"] || 0, p2["Forced Error"] || 0]},
+        { label: 'Short Rally Win', value: [p1["Short Rally"] || 0, p2["Short Rally"] || 0]},
+        { label: 'Long Rally Win', value: [p1["Long Rally"] || 0, p2["Long Rally"] || 0]},
+        { label: 'Ace', value: [p1["Ace"] || 0, p2["Ace"] || 0]},
+        { label: 'Winner', value: [p1["Winner"] || 0, p2["Winner"] || 0]},
+        { label: 'Unforced Error-FH', value: [p1["Unforced Error-FH"] || 0, p2["Unforced Error-FH"] || 0]},
+        { label: 'Unforced Error-BH', value: [p1["Unforced Error-BH"] || 0, p2["Unforced Error-BH"] || 0]},
+        { label: 'Unforced Error-Net', value: [p1["Unforced Error-Net"] || 0, p2["Unforced Error-Net"] || 0]},
+        { label: 'Unforced Error-FH-Slice', value: [p1["Unforced Error-FH-Slice"] || 0, p2["Unforced Error-FH-Slice"] || 0]},
+        { label: 'Unforced Error-BH-Slice', value: [p1["Unforced Error-Slice-BH"] || 0, p2["Unforced Error-Slice-BH"] || 0]},
+        { label: 'Unforced Error-Slice', value: [p1["Unforced Error-Slice"] || 0, p2["Unforced Error-Slice"] || 0]},
+        { label: 'Unforced Error-Smash', value: [p1["Unforced Error-Smash"] || 0, p2["Unforced Error-Smash"] || 0]},
+        { label: 'Winner-FH', value: [p1["Winner-FH"] || 0, p2["Winner-FH"] || 0]},
+        { label: 'Winner-BH', value: [p1["Winner-BH"] || 0, p2["Winner-BH"] || 0]},
+        { label: 'Winner-Net', value: [p1["Winner-Net"] || 0, p2["Winner-Net"] || 0]}      
+      ];
+
+      
+      const winReasons = Object.keys(p1.winReason || {});
+      const loseReasons = Object.keys(p1.loseReason || {});
+      const allReasons = Array.from(new Set([...winReasons, ...loseReasons]));
+
+      serveStats.forEach(stat => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${stat.label}</td>
+          <td>${stat.value[0]}</td>
+          <td>${stat.value[1]}</td>
+        `;
+        statsBody.appendChild(row);
+      });
+
+      allReasons.forEach(reason => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${reason}</td>
+          <td>${(p1.winReason?.[reason] || 0) + (p1.loseReason?.[reason] || 0)}</td>
+          <td>${(p2.winReason?.[reason] || 0) + (p2.loseReason?.[reason] || 0)}</td>
+        `;
+        statsBody.appendChild(row);
+      });
+      
+
+      document.getElementById('statsPopup').style.display = 'block';
+    }
+
+
+    function closeStatsPopup() {
+      document.getElementById('statsPopup').style.display = 'none';
+    }
+
+    function printPointHistoryLog() {
+      console.log("🎾 Point-by-Point Match Log:");
+      pointHistory.forEach(p => {
+      const winner = p.winner === 'p1' ? playerNames['p1'] : playerNames['p2']; //'Player 1' : 'Player 2';
+      const loser = p.winner === 'p1' ? playerNames['p2'] : playerNames['p1']; //'Player 2' : 'Player 1';
+      const server = p.server === 'p1' ? playerNames['p1'] : playerNames['p2']; //'Player 1' : 'Player 2';
+      let TB = p.tiebreak === false ? "" : "(TB)";
+      if ( p.reasonWin.includes("Winner")) {
+        console.log( `Set ${p.set}, Game ${p.game}${TB}, ${server} Serve, ${p.serveType}, ${winner} wins, ${p.reasonWin}, ${p.stroke}`);
+      //} else if ('Unforced Error' in p.reasonLose || 'Forced Error' in p.reasonLose || 'ReturnServe Error' in p.reasonLose ) {
+      //    const summary = `Set ${p.set}, Game ${p.game}, ${server} Serve, ${p.serveType}, ${winner} wins, ${p.reasonWin}, ${p.stroke}`
+      } else{
+          console.log(`Set ${p.set}, Game ${p.game}${TB}, ${server} Serve, ${p.serveType}, ${winner} wins, ${p.reasonWin}, ${loser} ${p.reasonLose}, ${p.stroke}`);
+      }
+//        console.log(`Set ${p.set}, Game ${p.game}, ${server} Serve, ${p.serveType}, ${winner} wins, ${p.reasonWin}, ${loser} ${p.reasonLose}`);
+      });
+    }
+
+    function printLastPointHistoryLog() {
+      if (!pointHistory || pointHistory.length === 0) {
+        console.log("No point history available.");
+        return;
+      }
+      const p = pointHistory[pointHistory.length - 1];
+      const winner = p.winner === 'p1' ? playerNames['p1'] : playerNames['p2']; //'Player 1' : 'Player 2';
+      const loser = p.winner === 'p1' ? playerNames['p2'] : playerNames['p1']; //'Player 2' : 'Player 1';
+      const server = p.server === 'p1' ? playerNames['p1'] : playerNames['p2']; //'Player 1' : 'Player 2';
+      let TB = p.tiebreak === false ? "" : "(TB)";
+      if ( p.reasonWin.includes("Winner")) {
+          console.log( `PointNumber ${p.pointNumber}, Set ${p.set}, Game ${p.game}${TB}, ${server} Serve, ${p.serveType}, ${winner} wins, ${p.reasonWin}, ${p.stroke}`);
+      //} else if ('Unforced Error' in p.reasonLose || 'Forced Error' in p.reasonLose || 'ReturnServe Error' in p.reasonLose ) {
+      //    const summary = `Set ${p.set}, Game ${p.game}, ${server} Serve, ${p.serveType}, ${winner} wins, ${p.reasonWin}, ${p.stroke}`
+      } else{
+          console.log(`PointNumber ${p.pointNumber}, Set ${p.set}, Game ${p.game}${TB}, ${server} Serve, ${p.serveType}, ${winner} wins, ${p.reasonWin}, ${loser} ${p.reasonLose}, ${p.stroke}`);
+      }
+      //console.log(summary);
+    }
+
+
+    function winGame(playerKey) {
+        score[playerKey].games++;
+        // Store point count for this game
+        score.gameHistory.push({
+        p1Points: score.p1.pointsWin,
+        p2Points: score.p2.pointsWin,
+        isTiebreak: false
+        });
+        score.p1.points = 0;
+        score.p2.points = 0;
+        score.p1.advantage = false;
+        score.p2.advantage = false; 
+        score.p1.pointsWin = 0;
+        score.p2.pointsWin = 0;
+        // Update game history table
+        updateGameHistoryTable();
+    }
+
+
+    function updateGameHistoryTable() {
+        const table = document.getElementById('gameHistoryTable');
+        table.innerHTML = '';
+
+        /* Calculate totals
+        let totalP1 = 0;
+        let totalP2 = 0;
+        score.gameHistory.forEach(entry => {
+            totalP1 += entry.p1Points;
+            totalP2 += entry.p2Points;
+        }); */
+        //console.log(totalP1, totalP2, score.p1.totalWin, score.p2.totalWin);
+        // Create table header with total points row
+        const header = document.createElement('thead');
+        header.innerHTML = `
+            <tr>
+            <th>Game #</th>
+            <th>${playerNames['p1']} Points</th>
+            <th>${playerNames['p2']} Points</th>
+            </tr>
+            <tr style="font-weight: bold; background-color: #f0f0f0;">
+            <td>Total</td>
+            <td>${score.p1.totalWin}</td>
+            <td>${score.p2.totalWin}</td>
+            </tr>
+        `;
+        table.appendChild(header);
+
+        // Add individual game rows
+        const body = document.createElement('tbody');
+        score.gameHistory.forEach((entry, index) => {
+            const row = document.createElement('tr');
+            const gameLabel = entry.isTiebreak ? `${index + 1} (TB)` : index + 1;
+            row.innerHTML = `
+            <td>${gameLabel}</td>
+            <td>${entry.p1Points}</td>
+            <td>${entry.p2Points}</td>
+            `;
+            body.appendChild(row);
+        });
+
+        table.appendChild(body);
+    }
+
+
+    function getFirstServer() {
+      const selected = document.querySelector('input[name="firstServer"]:checked');
+      return selected ? selected.value : null; // returns "p1" or "p2" or null
+    }
+
+
+    function isFirstServerSelected() {
+        return !!document.querySelector('input[name="firstServer"]:checked');
+    }
+
+
+    function recordSet() {
+        let p1Games = score.p1.games;
+        let p2Games = score.p2.games;
+        let tiebreakScore = "";
+
+        if (isTiebreak) {
+            // Store actual tiebreak score in (x–y) format
+            tiebreakScore = ` (${score.p1.points}–${score.p2.points})`;
+
+            isTiebreak = false;
+            document.getElementById('tiebreakToggle').checked = false;
+        }
+
+        const setScore = `${p1Games}–${p2Games}${tiebreakScore}`;
+        score.setHistory.push(setScore);
+
+        // Reset for next set
+        if (p1Games>p2Games){
+            score.p1.sets++;
+        }else{
+            score.p2.sets++;
+        }
+        score.p1.games = 0;
+        score.p2.games = 0;
+        score.p1.points = 0;
+        score.p2.points = 0;
+        score.p1.advantage = false;
+        score.p2.advantage = false;
+        score.p1.pointsWin = 0;
+        score.p2.pointsWin = 0;
+        updateGameHistoryTable();
+        updateUI();
+        save();
+    }
+
+
+
+
+    function getPointDisplay(p, o) {
+        if (isTiebreak) {
+            return score[p].points;
+        }
+
+        if (!useDeuce) {
+            return pointLabels[score[p].points] || score[p].points;
+        }
+
+        if (score[p].points < 3) {
+            return pointLabels[score[p].points];
+            } else if (score[o].points < 3) {
+                return '40';
+            } else if (score[p].advantage) {
+                return 'Ad';
+            } else if (score[o].advantage) {
+                return '40';
+            } else {
+                return 'Deuce';
+        }
+    }
+
+
+    function updateUI() {
+      document.getElementById('p1Points').textContent = getPointDisplay('p1', 'p2');
+      document.getElementById('p2Points').textContent = getPointDisplay('p2', 'p1');
+      document.getElementById('p1Games').textContent = score.p1.games;
+      document.getElementById('p2Games').textContent = score.p2.games;
+      document.getElementById('p1Sets').textContent = score.p1.sets;
+      document.getElementById('p2Sets').textContent = score.p2.sets;
+      document.getElementById('setHistoryText').textContent = score.setHistory.length > 0
+        ? score.setHistory.join(', ') : 'None';
+    }
+
+    /*
+    function resetPlayer(player) {
+      const p = player === 1 ? 'p1' : 'p2';
+      score[p] = { points: 0, games: 0, sets: 0, advantage: false, pointsWin:0 , totalWin:0 };
+      updateUI();
+      save();
+    }
+    */
+    /*
+    function clickResetAll() {
+      const popup = document.getElementById("resetConfirmPopup");
+      popup.style.display = "flex";
+
+      const confirmBtn = document.getElementById("confirmResetBtn");
+      const cancelBtn = document.getElementById("cancelResetBtn");
+
+      // Remove old listeners if they exist to prevent duplicates
+      confirmBtn.onclick = () => {
+        resetAll(); // Call your actual reset logic
+        popup.style.display = "none";
+      };
+
+      cancelBtn.onclick = () => {
+        popup.style.display = "none";
+      };
+    }
+    */
+
+    function showConfirmation(message, onConfirm) {
+      const popup = document.getElementById("confirmPopup");
+      const backdrop = document.getElementById("confirmPopupBackdrop");
+      const msg = document.getElementById("confirmPopupMessage");
+
+      msg.textContent = message;
+      popup.style.display = "block";
+      backdrop.style.display = "block";
+
+      // Remove previous handlers to avoid stacking
+      const confirmBtn = document.getElementById("confirmPopupYesBtn");
+      const cancelBtn = document.getElementById("confirmPopupCancelBtn");
+
+      const cleanup = () => {
+        popup.style.display = "none";
+        backdrop.style.display = "none";
+        confirmBtn.replaceWith(confirmBtn.cloneNode(true));
+        cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+      };
+
+      confirmBtn.onclick = () => {
+        cleanup();
+        onConfirm(); // Execute the passed function
+      };
+
+      cancelBtn.onclick = cleanup;
+    }
+
+    function clickResetAll() {
+      showConfirmation("Reset to DELETE ALL data?", () => {
+        resetAll();
+      });
+    }
+
+    function clickUndoLastPoint() {
+      showConfirmation("Undo last point?", () => {
+        undoLastPoint();
+      });
+    }
+
+
+
+    function resetAll() {
+      isTiebreak = false;
+      score.p1 = { points: 0, games: 0, sets: 0, advantage: false,    pointsWin:0, totalWin:0};
+      score.p2 = { points: 0, games: 0, sets: 0, advantage: false,    pointsWin:0, totalWin:0};
+      score.setHistory = [];
+      score.gameHistory = [];
+      score.firstServer = null; //getFirstServer();
+      pointHistory = [];
+      undoStack =[];
+      analyticData.p1 = { total: {}  }; //{ sets: [],total: {}  };
+      analyticData.p2 = { total: {}  };
+      analyticData.totalRecords=0 ;
+      playerNames = {p1:'Player 1', p2:"Player 2"};
+      document.getElementById("player1NameInput").value = "";
+      document.getElementById("player2NameInput").value = "";
+      updatePlayerLabels();
+      document.getElementById('tiebreakToggle').checked = false;
+      // Uncheck all match condition checkboxes
+      document.querySelectorAll('#match-conditions input[type="checkbox"]').forEach(cb => cb.checked = false);
+      // Uncheck the "Who serves first?" radio buttons
+      document.querySelectorAll('input[name="firstServer"]').forEach(r => {r.checked = false; r.disabled=false;});
+      // Disable score buttons again
+      document.getElementById('add-point-p1').disabled = true;
+      document.getElementById('add-point-p2').disabled = true;
+      HidePointHistory()
+      updateGameHistoryTable();
+      updateUI();
+      save();
+    }
+
+
+    function exportCSV() {
+        let csv = '';
+        const conditions = getSelectedMatchConditions();
+        csv += 'Match Conditions\n';
+        csv += `Court Type:,${conditions.court.join(' / ')}\n`;
+        csv += `Location:,${conditions.location.join(' / ')}\n`;
+        csv += `Weather:,${conditions.weather.join(' / ')}\n\n`;
+        csv += `Player 1 Name: ${playerNames['p1']}\n`;
+        csv += `Player 2 Name: ${playerNames['p2']}\n\n`;
+        csv += `First Server:, ${playerNames[getFirstServer()]}\n\n`;
+
+        // Section 1: Set History
+        csv += 'Set History\n';
+        csv += 'Set #, Score\n';
+        score.setHistory.forEach((entry, index) => {
+            csv += `${index + 1},${entry}\n`;
+        });
+        csv += '\n'; // Spacer
+        // Section 2: Game Point History
+        csv += 'Game Point History\n';
+        csv += `Game #, ${playerNames['p1']} Points, ${playerNames['p2']} Points\n`;
+        csv += `Total Win, ${score.p1.totalWin}, ${score.p2.totalWin}\n`;
+        score.gameHistory.forEach((entry, index) => {
+            const gameLabel = entry.isTiebreak ? `${index + 1} (TB)` : index + 1;
+            csv += `${gameLabel},${entry.p1Points},${entry.p2Points}\n`;
+        });
+        // Section 3: if Analytical mode enabled, output pointHistory
+        if (pointHistory){
+            // Header for Point-by-Point History
+            csv += "\n\nPoint-by-Point History\n";
+            csv += "Set,Game,Server,Serve Type,Winner,Winning Reason,Losing Reason,Current Score\n";
+            pointHistory.forEach(p => {
+            const winner = p.winner === 'p1' ? playerNames['p1'] : playerNames['p2']; //'Player 1' : 'Player 2';
+            const loser = p.winner === 'p1' ? playerNames['p2'] : playerNames['p1']; //'Player 2' : 'Player 1';
+            const server = p.server === 'p1' ? playerNames['p1'] : playerNames['p2']; //'Player 1' : 'Player 2';
+            let TB = p.tiebreak === false ? "" : "(TB)";
+              if ( p.reasonWin.includes("Winner")) {
+                csv += `\nPointNumber ${p.pointNumber},Set ${p.set}, Game ${p.game}${TB}, ${server} Serve, ${p.serveType}, ${winner} wins, ${p.reasonWin}, ${p.stroke}`;
+              } else{
+                csv += `\nPointNumber ${p.pointNumber},Set ${p.set}, Game ${p.game}${TB}, ${server} Serve, ${p.serveType}, ${winner} wins, ${p.reasonWin}, ${loser} ${p.reasonLose}, ${p.stroke}`;
+              }
+              //csv += `Set ${p.set}, Game ${p.game}, ${server} Serve, ${p.serveType}, ${winner} wins, ${p.reasonWin}, ${loser} ${p.reasonLose}\n`;
+            });
+        }
+        // Section 4: Statistics from Analytical Data
+        if (analyticData.totalRecords > 0){
+            csv += "\n\n\nAnalytical Summary\n";
+            csv += `Analytical Recorded: ${analyticData.totalRecords} \n`;
+            csv += `Total Points Played: ${score.p1.totalWin + score.p2.totalWin}\n\n`;
+            csv += `Metric, ${playerNames['p1']}, ${playerNames['p2']}\n`;
+            const p1Data = analyticData['p1'].total;
+            const p2Data = analyticData['p2'].total;
+
+            // 1. Preferred order of statistics
+            csv += `Total Win, ${score.p1.totalWin},${score.p2.totalWin}\n`;
+            const p1_serve1_total = (p1Data["First Serve"] || 0) + (p1Data["Second Serve"] || 0) + (p1Data["Double Fault"] || 0);
+            const p2_serve1_total = (p2Data["First Serve"] || 0) + (p2Data["Second Serve"] || 0) + (p2Data["Double Fault"] || 0);
+            const p1_serve2_total = (p1Data["Second Serve"] || 0) + (p1Data["Double Fault"] || 0);
+            const p2_serve2_total = (p2Data["Second Serve"] || 0) + (p2Data["Double Fault"] || 0);
+            csv += `Total First Serve, ${p1_serve1_total}, ${p2_serve1_total}\n`;
+            csv += `Total Second Serve, ${p1_serve2_total}, ${p2_serve2_total}\n`;
+            const preferredOrder = [
+              "First Serve",
+              "First Serve Win",
+              "Second Serve",
+              "Second Serve Win",
+              "Double Fault",
+              "ReturnServe Error",
+              "Unforced Error",
+              "Forced Error",
+              "Winner",
+              "Ace",
+              "Short Rally",
+              "Long Rally",
+              "Unforced Error-FH",
+              "Unforced Error-BH",    
+              "Unforced Error-Net", 
+              "Unforced Error-FH-Slice",   
+              "Unforced Error-Slice-BH",  
+              "Unforced Error-Slice",  
+              "Unforced Error-Smash", 
+              "Winner-FH",
+              "Winner-BH",
+              "Winner-Net"        
+            ];
+
+            const printedKeys = new Set();
+            // Output in preferred order first
+            preferredOrder.forEach(key => {
+              //if (p1Data[key] !== undefined || p2Data[key] !== undefined) {
+                csv += `${key},${p1Data[key] || 0},${p2Data[key] || 0}\n`;
+                printedKeys.add(key);
+              //}
+            });
+
+            const allKeys = new Set([...Object.keys(p1Data), ...Object.keys(p2Data)]);
+            allKeys.forEach(key => {
+              if (!printedKeys.has(key)) {
+                const p1Val = p1Data[key] || 0;
+                const p2Val = p2Data[key] || 0;
+                csv += `${key},${p1Val},${p2Val}\n`;
+              }
+            });
+        }
+
+        // Create and download CSV file
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'tennis_history.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function getSelectedMatchConditions() {
+        const getChecked = (name) =>
+            Array.from(document.querySelectorAll(`input[name="${name}"]:checked`))
+                .map(cb => cb.value);
+        return {
+            court: getChecked('court'),
+            location: getChecked('location'),
+            weather: getChecked('weather')
+        };
+    }
+
+
+
+
+    resetAll();
+    load();
+
+    // Detect first server selection and unlock scoring
+    document.querySelectorAll('input[name="firstServer"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+        document.getElementById('add-point-p1').disabled = false;
+        document.getElementById('add-point-p2').disabled = false;
+        // Lock the selection
+        document.querySelectorAll('input[name="firstServer"]').forEach(r => r.disabled = true);
+        score.firstServer = getFirstServer();
+        });
+    });
+
+
+
+  </script>
+</body>
+
+
+</html>
