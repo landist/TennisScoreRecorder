@@ -1,4 +1,8 @@
-This webpage app is a simple and rudimentary static html file with scripts. It allows simple/detailed recording of Tennis match scores by two players. 
+Tennis Score Recorder
+
+https://landist.github.io/TennisScoreRecorder/
+
+This webpage app is a simple and rudimentary html file with scripts. It allows simple or detailed recording of score for Tennis matches. 
 
 - Free access, No installation, No registration, No login are required. No Ad. No tracking of any personal info. 
 - Data are located locally in user's browswer temporarily and are NOT saved unless the user export an CSV/Excel file locally anytime with the "Export CSV" button.
