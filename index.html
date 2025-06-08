@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Tennis Scoreboard</title>
-	<!-- webapp7.10.html-->
   <style>
     body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
     h1 { margin-bottom: 10px; }
@@ -18,12 +17,13 @@
       border: 1px solid #ccc;
       padding: 15px;
       position: fixed;
-      top: 2%;
+      top: 5%;
       left: 10%;
       right: 10%;
       z-index: 1000;
       box-shadow: 0 0 20px rgba(0,0,0,0.3);
     }
+
     .analytic-form {
       display: flex;
       justify-content: space-between;
@@ -33,7 +33,7 @@
 
     .popup {
       position: fixed;
-      top: 10%;
+      top: 5%;
       left: 50%;
       transform: translateX(-50%);
       width: 80%;
@@ -46,7 +46,7 @@
     }
 
     .popup-content {
-      max-height: 70vh;
+      max-height: 90vh;
       overflow-y: auto;
     }
 
@@ -73,25 +73,6 @@
       background-color: #ffffff; /* White */
     }
 
-    /*
-    #resetConfirmPopup {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-
-      background-color: white;
-      padding: 20px;
-      border: 2px solid #444;
-      box-shadow: 0 0 10px rgba(0,0,0,0.4);
-      z-index: 9999;
-
-      display: none; ///\* Hidden by default 
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-    */
 
     .popup-modal {
       position: fixed;
@@ -198,6 +179,12 @@
 </div>
 
 
+<div id="currentServerBox" style="margin-bottom: 10px; padding: 10px; border: 1px solid #ccc; background: #f9f9f9;">
+  <strong>Current Server:</strong> <span id="currentServerDisplay">Loading...</span>
+  <button onclick="clickChangeServer()" style="margin-left: 10px;">Change Server</button>
+</div>
+
+
   <div class="scoreboard">
     <div class="player"> 
       <h2 id="player1ScoreLabel">Player 1</h2>
@@ -264,10 +251,11 @@
 
 
   <div id="analyticPopup" style="display:none; position: fixed; top: 5%; left: 50%; transform: translateX(-50%);
-    background: #fff; border: 2px solid #333; padding: 1em; z-index: 1000; box-shadow: 0 0 20px rgba(0,0,0,0.5);max-height: 90vh; overflow-y: auto;">
+    background: #fff; border: 2px solid #333; padding: 1em; z-index: 1000; box-shadow: 0 0 20px rgba(0,0,0,0.5); max-height: 90vh;  overflow-y: auto; ">
+    <!--div class="content"></div-->
     <h3>Point Winner - </h3>
     <p id="pointWinnerInfoText">Player X</p>
-    <h3>Game Server - </h3>
+    <h3>Curent Server - </h3>
     <p id="serveInfoText">Current Server</p>
     <form id="analyticForm">   
       <table>
@@ -287,7 +275,7 @@
             <label><input type="checkbox" name="strokeTech" value="Slice"> Slice</label><br>
           </td>
           <td>
-            <label><input type="checkbox" name="serveType" value="Double Fault"> Double Fault</label><br>
+            <label><input type="checkbox" name="serveType" value="Double Fault" id="DoubleFaultCheckbox"> Double Fault</label><br>
             <label><input type="checkbox" name="loseReason" value="ReturnServe Error" id="returnServeErrorCheckbox"> ReturnServe Error</label><br>
             <label><input type="checkbox" name="winReason" value="Ace" id="AceCheckbox"> Ace</label><br>
             <label><input type="checkbox" name="strokeTech" value="BH"> BH</label><br>
@@ -344,8 +332,9 @@
   <script>
 
     let isTiebreak = false;
-	  let tiebreakTarget = 7;
-    const appVersion = "v2.0.0"; // or any version string you want
+	let tiebreakTarget = 7;
+    let serverOverride = false;
+    const appVersion = "v2.1.0"; // or any version string you want
     let undoStack =[];
 
     const score = {
@@ -397,6 +386,7 @@
       } 
       document.getElementById("labelFirstServerP1").innerText = playerNames['p1'] ;
       document.getElementById("labelFirstServerP2").innerText = playerNames['p2'] ;
+      //updateCurrentServerDisplay();
     }
 
 
@@ -442,6 +432,14 @@
       score.p2.points = 0;
       updateUI();
     }
+
+
+    // Call this to update the UI display
+    function updateCurrentServerDisplay() {
+        const currentServer = getCurrentServer();
+        document.getElementById("currentServerDisplay").innerText = playerNames[currentServer] ;
+    }
+
 
     // expect player is string 'p1' or 'p2'
     function incrementPoint(player){
@@ -536,6 +534,7 @@
             return;
         }
         incrementPoint(player);
+        updateCurrentServerDisplay();
     }
 
     // Dynamically set "Serve Info" text based on server and selected serve type
@@ -545,8 +544,10 @@
         document.getElementById('serveInfoText').textContent = `${playerText}`;
     }
 
+    // return 'p1' or 'p2'
     function getCurrentServer() {
       const gamesPlayed = score.gameHistory.length;
+      let cur_server = null;
       if (!score || !Array.isArray(score.gameHistory)) {
         console.error("Score object or game history is missing.");
         return null;
@@ -557,23 +558,41 @@
       }
       if (! isTiebreak) {// Serving alternates every game, usual mode, not in Tiebreak mode
         if (gamesPlayed % 2 === 0) {
-          return score.firstServer; // Same as first server on even-numbered games
+          cur_server = score.firstServer; // Same as first server on even-numbered games
         } else {
-          return score.firstServer === 'p1' ? 'p2' : 'p1';
+          cur_server = score.firstServer === 'p1' ? 'p2' : 'p1';
         }
       } else { // in Tiebreak mode
         let tieBreak_firstServer = null;
         if (gamesPlayed % 2 === 0) { tieBreak_firstServer = score.firstServer; }
         else { tieBreak_firstServer = (score.firstServer === 'p1' ? 'p2' : 'p1'); }
         let tieBreak_ptotal = score.p1.points + score.p2.points;
-        if (tieBreak_ptotal ===0) {return tieBreak_firstServer;}
+        if (tieBreak_ptotal ===0) {cur_server =  tieBreak_firstServer;}
         const rotationIndex = Math.floor((tieBreak_ptotal - 1) / 2);
         const isFirstServerTurn = rotationIndex % 2 === 0;
         //console.log("rotationIndex ", rotationIndex, " isFirstServerTurn ", isFirstServerTurn );
-        let tieBreak_cur = (isFirstServerTurn ? (tieBreak_firstServer === 'p1' ? 'p2' : 'p1') : tieBreak_firstServer);
+        cur_server = (isFirstServerTurn ? (tieBreak_firstServer === 'p1' ? 'p2' : 'p1') : tieBreak_firstServer);
         //console.log("Tiebreak current Server is ", tieBreak_cur);
-        return tieBreak_cur;
+        //return tieBreak_cur;
       }
+
+      if (serverOverride){
+        cur_server = cur_server === 'p1' ? 'p2' : 'p1';
+      }
+      return cur_server;
+    }
+
+    // Toggle current server and apply override from now on
+    function toggleCurrentServer() {
+        serverOverride = serverOverride === true ? false : true; 
+        console.log("Server manually changed! ", serverOverride);
+        updateCurrentServerDisplay();
+    }
+
+    // Call this to update the UI display
+    function updateCurrentServerDisplay() {
+        const currentServer = getCurrentServer();
+        document.getElementById("currentServerDisplay").innerText = playerNames[currentServer] ;
     }
 
     function togglePointHistory() {
@@ -640,19 +659,23 @@
 
         const returnServeCheckbox = document.getElementById("returnServeErrorCheckbox");
         const AceCheckbox = document.getElementById("AceCheckbox");
-        if (!returnServeCheckbox || !AceCheckbox) {
-          console.error("ReturnServe Error or Ace checkbox not found!");
+        const DoubleFaultbox = document.getElementById("DoubleFaultCheckbox");
+        if (!returnServeCheckbox || !AceCheckbox || !DoubleFaultbox) {
+          console.error("ReturnServe Error or Ace or Double Fault checkbox not found!");
           return;
         }
         // Enable only if the winner is the server
         if (p === server) {
           returnServeCheckbox.disabled = false;
           AceCheckbox.disabled = false;
+          DoubleFaultbox.disabled = true;
         } else {
           returnServeCheckbox.checked = false; // Uncheck if disabling
           returnServeCheckbox.disabled = true;
           AceCheckbox.checked = false; // Uncheck if disabling
           AceCheckbox.disabled = true;
+          DoubleFaultbox.disabled = false; 
+          DoubleFaultbox.checked = false; 
         }
         /*try {
           updateServeInfoText();
@@ -732,7 +755,6 @@
         addAnalyticData(cur_point);
         // adjust point here when in analytical mode, after recordPoint due to the way it uses setHistory and gameHistory
         incrementPoint(winnerID);
-
         //printPointHistoryLog();
         printLastPointHistoryLog()
 
@@ -740,6 +762,8 @@
         // Optionally reset checkboxes
         document.querySelectorAll('#analyticForm input[type="checkbox"]').forEach(cb => cb.checked = false);
         setMainButtonsDisabled(false);
+
+        updateCurrentServerDisplay();
     }
 
 
@@ -1157,9 +1181,15 @@
     }
 
 
+    function clickChangeServer() {
+      showConfirmation("Change Server?", () => {
+        toggleCurrentServer();
+      });        
+    }
 
     function resetAll() {
       isTiebreak = false;
+      serverOverride = false;
       score.p1 = { points: 0, games: 0, sets: 0, advantage: false,    pointsWin:0, totalWin:0};
       score.p2 = { points: 0, games: 0, sets: 0, advantage: false,    pointsWin:0, totalWin:0};
       score.setHistory = [];
@@ -1329,6 +1359,7 @@
         // Lock the selection
         document.querySelectorAll('input[name="firstServer"]').forEach(r => r.disabled = true);
         score.firstServer = getFirstServer();
+        updateCurrentServerDisplay();
         });
     });
 
