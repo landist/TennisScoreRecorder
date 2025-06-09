@@ -180,7 +180,7 @@
 
 
 <div id="currentServerBox" style="margin-bottom: 10px; padding: 10px; border: 1px solid #ccc; background: #f9f9f9;">
-  <strong>Current Server:</strong> <span id="currentServerDisplay">Loading...</span>
+  <strong>Current Server:</strong> <span id="currentServerDisplay">Undefined...</span>
   <button onclick="clickChangeServer()" style="margin-left: 10px;">Change Server</button>
 </div>
 
@@ -332,9 +332,9 @@
   <script>
 
     let isTiebreak = false;
-	let tiebreakTarget = 7;
+	  let tiebreakTarget = 7;
     let serverOverride = false;
-    const appVersion = "v2.1.0"; // or any version string you want
+    const appVersion = "v2.1.1"; // or any version string you want
     let undoStack =[];
 
     const score = {
@@ -494,7 +494,8 @@
       const snapshot = {
         scoreSnapshot: structuredClone(score),
         analyticSnapshot: structuredClone(analyticData) ,
-        pointHistorySnapshot: structuredClone(pointHistory)
+        pointHistorySnapshot: structuredClone(pointHistory) ,
+        tieBreak: isTiebreak
       };
       undoStack.push(snapshot);
     }
@@ -505,6 +506,11 @@
         return;
       }
       const lastState = undoStack.pop();
+      isTiebreak = lastState.tieBreak;
+      if (isTiebreak){
+        document.getElementById("tiebreakToggle").checked = true;
+      }
+
       // Restore score (replace fields, since score is declared with const)
       Object.keys(score).forEach(key => delete score[key]);
       Object.assign(score, structuredClone(lastState.scoreSnapshot));
@@ -593,7 +599,7 @@
     // Call this to update the UI display
     function updateCurrentServerDisplay() {
         const currentServer = getCurrentServer();
-        document.getElementById("currentServerDisplay").innerText = playerNames[currentServer] ;
+        document.getElementById("currentServerDisplay").innerText = playerNames[currentServer] || "Undefined...";
     }
 
     function togglePointHistory() {
@@ -1215,6 +1221,7 @@
       document.getElementById('add-point-p2').disabled = true;
       HidePointHistory()
       updateGameHistoryTable();
+      updateCurrentServerDisplay();
       updateUI();
       save();
     }
