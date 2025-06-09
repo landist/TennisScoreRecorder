@@ -211,7 +211,7 @@
   </div>
   <div class="button-row">
     <button onclick="clickUndoLastPoint()">Undo Last Point</button>
-    <button onclick="recordSet()" style="margin-top: 20px;">Start New Set</button>
+    <button onclick="clickStartNewSet()" style="margin-top: 20px;">Start New Set</button>
     <button onclick="clickResetAll()" style="margin-top: 10px;">Reset All</button>
   </div>
 
@@ -1187,6 +1187,11 @@
       });
     }
 
+    function clickStartNewSet() {
+      showConfirmation("Start a New Set?", () => {
+        recordSet();
+      });        
+    }
 
     function clickChangeServer() {
       showConfirmation("Change Server?", () => {
