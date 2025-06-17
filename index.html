@@ -164,6 +164,7 @@
     <h2><input type="checkbox" id="deuceToggle" onchange="saveSettings()"> Enable Deuce/Advantage rules</h2>
 </label>
 
+<!--
 <div style="margin: 20px 0;">
   <label><h2><input type="checkbox" id="tiebreakToggle" onchange="toggleTiebreak()"> Enable Tiebreak Mode</h2></label>
   <select id="tiebreakLength" onchange="saveSettings()">
@@ -171,6 +172,25 @@
     <option value="10">10-Point Tiebreak</option>
   </select>
 </div>
+-->
+<div style="margin: 20px 0;">
+  <label><h2><input type="checkbox" id="tiebreakToggle" onchange="toggleTiebreak()"> Enable Tiebreak Mode</h2></label>
+  <div style="margin-top: 10px;">
+    <label for="tiebreakLength"><strong>Tiebreak Length:</strong></label>
+    <select id="tiebreakLength" onchange="handleTiebreakLengthChange();  saveSettings()">
+      <option value="7">7-Point Tiebreak</option>
+      <option value="10">10-Point Tiebreak</option>
+      <option value="custom">Custom</option>
+    </select>
+
+    <input type="number" id="customTiebreakInput" min="1" placeholder="e.g. 15"
+           style="width: 80px; display: none; margin-left: 10px;" />
+    <button id="confirmCustomTiebreak" onclick="confirmCustomTiebreak()" style="display: none; margin-left: 5px;"> 
+      Set
+    </button>
+  </div>
+</div>
+
 
 <div style="text-align: center; margin-bottom: 1em;">
     <label>
@@ -332,9 +352,10 @@
   <script>
 
     let isTiebreak = false;
+    let customTiebreakTarget = null;
 	  let tiebreakTarget = 7;
     let serverOverride = false;
-    const appVersion = "v2.1.1"; // or any version string you want
+    const appVersion = "v2.2.1"; // or any version string you want
     let undoStack =[];
 
     const score = {
@@ -398,7 +419,9 @@
         useDeuce = document.getElementById('deuceToggle').checked;
         localStorage.setItem('tennisUseDeuce', useDeuce);
 
-        tiebreakTarget = parseInt(document.getElementById('tiebreakLength').value);
+        //tiebreakTarget = parseInt(document.getElementById('tiebreakLength').value);
+        tiebreakTarget = getTiebreakTarget();
+        console.log("tiebreakTarget = ", tiebreakTarget);
         localStorage.setItem('tennisTiebreakTarget', tiebreakTarget);
     }
 
@@ -428,11 +451,81 @@
 
     function toggleTiebreak() {
       isTiebreak = document.getElementById('tiebreakToggle').checked;
+      if (! isTiebreak){
+        resetTiebreakMode();
+        return;
+      }
+      document.getElementById('tiebreakLength').disabled = !isTiebreak;
+      document.getElementById('customTiebreakInput').style.display = isTiebreak && 
+        document.getElementById('tiebreakLength').value === 'custom' 
+      ? 'inline-block'    : 'none';
       score.p1.points = 0;
       score.p2.points = 0;
       updateUI();
     }
 
+    function handleTiebreakLengthChange() {
+      const select = document.getElementById('tiebreakLength');
+      const customInput = document.getElementById('customTiebreakInput');
+      const confirmButton = document.getElementById('confirmCustomTiebreak');
+      if (select.value === 'custom') {
+        customInput.value = '';
+        customInput.style.display = 'inline-block';
+        customInput.disabled = false;
+        confirmButton.style.display = 'inline-block';
+        confirmButton.disabled = false;
+        customInput.focus();
+      } else {
+        customInput.style.display = 'none';    
+        confirmButton.style.display = 'none';
+        customTiebreakTarget = null; // reset if user switches away from custom
+      }
+    }
+
+    function getTiebreakTarget() {
+      const select = document.getElementById('tiebreakLength');
+      if (select.value === 'custom') {
+        if (customTiebreakTarget !== null) {
+          console.log(customTiebreakTarget);
+          return  customTiebreakTarget;
+        } else {
+          alert("Please enter and confirm a custom tiebreak length. Default to 7.");
+          return 7;
+        }
+      }
+      return parseInt(select.value, 10);
+    }
+
+    function confirmCustomTiebreak() {
+      const input = document.getElementById('customTiebreakInput');
+      const button = document.getElementById('confirmCustomTiebreak');
+      const value = parseInt(input.value, 10);
+      if (!isNaN(value) && value > 0) {
+        customTiebreakTarget = value;
+        tiebreakTarget = value;
+        console.log(`Custom tiebreak length set to ${value} points.`);
+      } else {
+        alert("Please enter a valid positive number.");
+        input.focus();
+      }
+      input.disabled = true;
+      button.disabled = true;
+
+    }
+
+    function resetTiebreakMode(){
+            isTiebreak = false;
+            customTiebreakTarget = null;
+            document.getElementById('tiebreakToggle').checked = false;
+            const tiebreakSelect = document.getElementById('tiebreakLength');
+            // Reset to 7-point tiebreak
+            tiebreakSelect.value = '7';
+            tiebreakTarget = 7;
+            tiebreakSelect.disabled = true;
+            // hide custom tiebreak button
+            document.getElementById('customTiebreakInput').style.display = 'none' ;
+            document.getElementById('confirmCustomTiebreak').style.display = 'none';
+    }
 
     // Call this to update the UI display
     function updateCurrentServerDisplay() {
@@ -462,8 +555,13 @@
             isTiebreak: true
             });
             recordSet();
-            isTiebreak = false;
-            document.getElementById('tiebreakToggle').checked = false;
+            resetTiebreakMode();
+            //isTiebreak = false;
+            ////customTiebreakTarget = null;
+            //document.getElementById('tiebreakToggle').checked = false;
+            //// hide custom tiebreak button
+            //document.getElementById('customTiebreakInput').style.display = 'none' ;
+            //document.getElementById('confirmCustomTiebreak').style.display = 'none';
             }
         } else if (!useDeuce) {
             score[p].points++;
@@ -495,7 +593,8 @@
         scoreSnapshot: structuredClone(score),
         analyticSnapshot: structuredClone(analyticData) ,
         pointHistorySnapshot: structuredClone(pointHistory) ,
-        tieBreak: isTiebreak
+        tieBreak: isTiebreak,
+        tieBreakTarget_old: tiebreakTarget 
       };
       undoStack.push(snapshot);
     }
@@ -507,8 +606,19 @@
       }
       const lastState = undoStack.pop();
       isTiebreak = lastState.tieBreak;
+      tiebreakTarget = lastState.tieBreakTarget_old;
       if (isTiebreak){
         document.getElementById("tiebreakToggle").checked = true;
+        console.log("Previous tiebreak target = ", tiebreakTarget);
+        if (tiebreakTarget === 10){
+          document.getElementById("tiebreakLength").value = '10';
+        } else if(tiebreakTarget !== 7){
+          document.getElementById("tiebreakLength").value = 'custom';
+          const customInput = document.getElementById('customTiebreakInput');
+          customInput.value = `${tiebreakTarget}`;
+          customInput.style.display = 'inline-block';
+          customInput.disabled = true;
+        }
       }
 
       // Restore score (replace fields, since score is declared with const)
@@ -1056,8 +1166,9 @@
             // Store actual tiebreak score in (x–y) format
             tiebreakScore = ` (${score.p1.points}–${score.p2.points})`;
 
-            isTiebreak = false;
-            document.getElementById('tiebreakToggle').checked = false;
+            resetTiebreakMode();
+            //isTiebreak = false;
+            //document.getElementById('tiebreakToggle').checked = false;
         }
 
         const setScore = `${p1Games}–${p2Games}${tiebreakScore}`;
@@ -1201,6 +1312,7 @@
 
     function resetAll() {
       isTiebreak = false;
+      customTiebreakTarget = null;
       serverOverride = false;
       score.p1 = { points: 0, games: 0, sets: 0, advantage: false,    pointsWin:0, totalWin:0};
       score.p2 = { points: 0, games: 0, sets: 0, advantage: false,    pointsWin:0, totalWin:0};
@@ -1216,7 +1328,8 @@
       document.getElementById("player1NameInput").value = "";
       document.getElementById("player2NameInput").value = "";
       updatePlayerLabels();
-      document.getElementById('tiebreakToggle').checked = false;
+      //document.getElementById('tiebreakToggle').checked = false;
+      resetTiebreakMode();
       // Uncheck all match condition checkboxes
       document.querySelectorAll('#match-conditions input[type="checkbox"]').forEach(cb => cb.checked = false);
       // Uncheck the "Who serves first?" radio buttons
