@@ -355,7 +355,7 @@
     let customTiebreakTarget = null;
 	  let tiebreakTarget = 7;
     let serverOverride = false;
-    const appVersion = "v2.2.1"; // or any version string you want
+    const appVersion = "v2.3.1"; // or any version string you want
     let undoStack =[];
 
     const score = {
@@ -1471,8 +1471,60 @@
         };
     }
 
+    function restoreMatchInfo() {
+      const savedInfo = JSON.parse(localStorage.getItem("tennisMatchInfo"));
+      if (!savedInfo) return;
+      // Restore player names
+      if (savedInfo.player1Name || savedInfo.player2Name) {
+        document.getElementById('player1NameInput').value = savedInfo.player1Name || "Player 1";
+        playerNames['p1'] = savedInfo.player1Name || "Player 1";
+        document.getElementById('player2NameInput').value = savedInfo.player2Name || "Player 2";
+        playerNames['p2'] = savedInfo.player2Name || "Player 2";
+        updatePlayerLabels();
+      }
+      // Restore first server if needed
+      if (savedInfo.firstServer) {
+        score.firstServer = savedInfo.firstServer;
+        const radio = document.querySelector(`input[name="firstServer"][value="${score.firstServer}"]`);
+        if (radio)  radio.checked = true;
+        document.getElementById('add-point-p1').disabled = false;
+        document.getElementById('add-point-p2').disabled = false;
+        // Lock the selection
+        document.querySelectorAll('input[name="firstServer"]').forEach(r => r.disabled = true);
+        updateCurrentServerDisplay();
+      }
+      // Helper to restore checkboxes
+      const restoreCheckboxes = (name, values) => {
+        if (!Array.isArray(values)) return;
+        values.forEach(val => {
+          const checkbox = document.querySelector(`input[name="${name}"][value="${val}"]`);
+          if (checkbox) checkbox.checked = true;
+        });
+      };
+      // Restore court, location, and weather
+      restoreCheckboxes('court', savedInfo.court);
+      restoreCheckboxes('location', savedInfo.location);
+      restoreCheckboxes('weather', savedInfo.weather);
+    }
 
 
+    function saveMatchInfo() {
+      const conditions = getSelectedMatchConditions();
+      const matchInfo = {
+        player1Name: playerNames.p1,
+        player2Name: playerNames.p2,
+        court: conditions.court,
+        location: conditions.location,
+        weather: conditions.weather,
+        firstServer: score.firstServer
+      };
+      try {
+        localStorage.setItem("tennisMatchInfo", JSON.stringify(matchInfo));
+        console.log("Match info saved.");
+      } catch (err) {
+        console.error("Failed to save match info:", err);
+      }
+    }
 
     resetAll();
     load();
@@ -1487,6 +1539,41 @@
         score.firstServer = getFirstServer();
         updateCurrentServerDisplay();
         });
+    });
+
+    //Auto-save on exit web or refresh/reload page
+    window.addEventListener("beforeunload", () => {
+      saveToUndoStack(); // backup current state
+      saveSettings();
+      saveMatchInfo();
+      const backupData = {
+        undoStack,
+        record : (score.p1.totalWin + score.p2.totalWin) || 0,
+        timestamp: Date.now()
+      };
+      localStorage.setItem("tennisMatchScoreBackup", JSON.stringify(backupData));
+    });
+
+    //
+    window.addEventListener("load", () => {
+      const saveData = localStorage.getItem("tennisMatchScoreBackup");
+      const backup = JSON.parse(saveData);
+      if (saveData && backup.record !==0 ) {
+        const restore = confirm(
+          `Found previous session data saved on ${new Date(backup.timestamp).toLocaleString()}. Restore and continue instead of restart from new?`
+        );
+        if (restore) {
+          // restore from backup
+          if (Array.isArray(backup.undoStack)) {
+            undoStack = backup.undoStack;
+            console.log("Undo stack recovered from localStorage.");
+            undoLastPoint();
+            restoreMatchInfo();
+          }
+        } else {
+          localStorage.removeItem("tennisMatchScoreBackup"); // User chooses to discard
+        }
+      }
     });
 
 
