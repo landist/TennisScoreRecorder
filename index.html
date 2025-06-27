@@ -96,14 +96,24 @@
       z-index: 1000;
     }
 
+    .radio-wrapper {
+      display: inline-flex;
+      align-items: center;
+      margin-right: 20px; /* space between the options */
+    }
+
+    .radio-wrapper label {
+      margin-left: 5px; /* spacing between radio and label text */
+      font-weight: bold;
+    }
 
   </style>
 </head>
 
 <body>
-  <h1>Tennis Match Score
-      <span id="versionDisplay" style="font-size: 0.6em; font-weight: normal; margin-left: 0.5em; color: #555;"></span>
-  </h1>
+  <h1>Tennis Match Score </h1>
+  <span id="versionDisplay" style="font-size: 1em; font-weight: normal; margin-left: 0.5em; color: #555;"></span>
+  
 
   <div id="setHistory" style="margin-top: 20px; font-weight: bold;">
     <h2>Set History: <span id="setHistoryText">None</span></h2>
@@ -146,18 +156,23 @@
   justify-content: center;
   align-items: center;
   gap: 1em;
-  margin-bottom: 1em;
+  margin-bottom: 10px; padding: 10px;
   flex-wrap: wrap;
+  border: 1px solid #ccc; background: #f9f9f9;
 ">
-  <b><h2>Select First Server to start recording</h2></b>
+  <b><h3>Select First Server to start recording</h3></b>
   <!-- 
   <label><input type="radio" name="firstServer" value="p1"> Player 1</label>
   <label><input type="radio" name="firstServer" value="p2"> Player 2</label>
   -->
-  <input type="radio" id="firstServerP1" name="firstServer" value="p1">
-  <label for="firstServerP1" id="labelFirstServerP1">Player 1</label>
-  <input type="radio" id="firstServerP2" name="firstServer" value="p2">
-  <label for="firstServerP2" id="labelFirstServerP2">Player 2</label>
+  <div class="radio-wrapper">  
+    <input type="radio" id="firstServerP1" name="firstServer" value="p1">
+    <label for="firstServerP1" id="labelFirstServerP1">Player 1</label>
+  </div>
+  <div class="radio-wrapper">  
+    <input type="radio" id="firstServerP2" name="firstServer" value="p2">
+    <label for="firstServerP2" id="labelFirstServerP2">Player 2</label>
+  </div>
 </div>
 
 <label>
@@ -227,7 +242,7 @@
   <div class="button-row">
     <button onclick="showStatsPopup()">Show Analytics</button>
     <button id="togglePointHistoryBtn" onclick="togglePointHistory()">Show Point History</button>
-    <button onclick="exportCSV()">📄 Export CSV</button>
+    <button onclick="exportCSV()">📄 Export Data</button>
   </div>
   <div class="button-row">
     <button onclick="clickUndoLastPoint()">Undo Last Point</button>
@@ -355,7 +370,7 @@
     let customTiebreakTarget = null;
 	  let tiebreakTarget = 7;
     let serverOverride = false;
-    const appVersion = "v2.3.1"; // or any version string you want
+    const appVersion = "v2.3.2"; // or any version string you want
     let undoStack =[];
 
     const score = {
@@ -671,6 +686,7 @@
       }
       if (!score.firstServer) {
         console.error("Error: firstServer has not been set. Cannot determine current server.");
+        serverOverride = false;
         return null;
       }
       if (! isTiebreak) {// Serving alternates every game, usual mode, not in Tiebreak mode
@@ -1560,7 +1576,7 @@
       const backup = JSON.parse(saveData);
       if (saveData && backup.record !==0 ) {
         const restore = confirm(
-          `Found previous session data saved on ${new Date(backup.timestamp).toLocaleString()}. Restore and continue instead of restart from new?`
+          `Found previous match saved on ${new Date(backup.timestamp).toLocaleString()}. OK to Restore and continue? Cancel to restart from new.`
         );
         if (restore) {
           // restore from backup
