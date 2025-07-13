@@ -424,7 +424,7 @@
     let customTiebreakTarget = null;
 	  let tiebreakTarget = 7;
     let serverOverride = false;
-    const appVersion = "v2.4.1"; // or any version string you want
+    const appVersion = "v2.4.2"; // or any version string you want
     let undoStack =[];
     let startTime = null;
     let endTime = null;
@@ -1005,10 +1005,17 @@
         stroke
         //pointScore  // e.g. "15–30"
       }) {
-          analyticData[server].total[serveType] = (analyticData[server].total[serveType] ||0) + 1;
+          if (serveType.length===0 && reasonWin.length ===0 && reasonLose.length ===0) {
+            console.log("No checkbox ticked! Record discarded! ", serveType, serveType.length);
+            return;
+          }
+
           analyticData.totalRecords ++;
-          if ( server === winner && serveType != "Double Fault"){
-            analyticData[server].total[serveType + ' Win'] = (analyticData[server].total[serveType + ' Win'] ||0) +1;
+          if (serveType.length !==0) {
+            analyticData[server].total[serveType] = (analyticData[server].total[serveType] ||0) + 1;
+            if ( server === winner && serveType != "Double Fault"){
+              analyticData[server].total[serveType + ' Win'] = (analyticData[server].total[serveType + ' Win'] ||0) +1;
+            }
           }
           // Update winner's stat
           if (reasonWin.length > 0){
