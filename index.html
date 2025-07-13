@@ -1464,12 +1464,13 @@
         csv += `Player 1 Name: ${playerNames['p1']}\n`;
         csv += `Player 2 Name: ${playerNames['p2']}\n\n`;
         csv += `First Server:, ${playerNames[getFirstServer()]}\n\n`;
-        csv += `Match Date,${endTime.date}\n`;
-        if (startTime) csv += `Start Time: ${startTime.time}\n`;
-        csv += `End Time: ${endTime.time}\n\n`;
+        if (startTime ) {  csv += `Match Date,${startTime.date}\n`; }
+        else if(endTime) { csv += `Match Date,${endTime.date}\n`; }
+        if (startTime) {csv += `Start Time: ${startTime.time}\n`; }
+        if (endTime) {csv += `End Time: ${endTime.time}\n\n`; }
 
         // Section 1: Set History
-        csv += 'Set History\n';
+        csv += '\nSet History\n';
         csv += 'Set #, Score\n';
         score.setHistory.forEach((entry, index) => {
             csv += `${index + 1},${entry}\n`;
