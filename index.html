@@ -31,6 +31,49 @@
       margin-top: 10px;
     }
 
+    .square-btn {
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: bold;
+      background-color: #d3d3d3; /* light grey */
+      color: black;
+      border: 2px solid #555;   /* thick border */
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 20px auto;         /* center horizontally with auto margins */
+    }
+
+    .square-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .rect-btn {
+      width: 240px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: bold;
+      background-color: #d3d3d3; /* light grey */
+      color: black;
+      border: 2px solid #555;   /* thick border */
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 20px auto;         /* center horizontally with auto margins */
+    }
+
+    .rect-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+
     .popup {
       position: fixed;
       top: 5%;
@@ -105,6 +148,8 @@
     .radio-wrapper label {
       margin-left: 5px; /* spacing between radio and label text */
       font-weight: bold;
+      align-items: center;
+      padding: 0px 1em 0px 8px;
     }
 
   </style>
@@ -115,9 +160,7 @@
   <span id="versionDisplay" style="font-size: 1em; font-weight: normal; margin-left: 0.5em; color: #555;"></span>
   
 
-  <div id="setHistory" style="margin-top: 20px; font-weight: bold;">
-    <h2>Set History: <span id="setHistoryText">None</span></h2>
-  </div>
+
 
 <div id="match-conditions" style="display: flex; flex-direction: column; align-items: center; gap: 1em; margin-bottom: 1.5em;">
   <!-- Row 1: Court Type -->
@@ -156,9 +199,9 @@
   justify-content: center;
   align-items: center;
   gap: 1em;
-  margin-bottom: 10px; padding: 10px;
+  margin-bottom: 10px; padding: 5px;
   flex-wrap: wrap;
-  border: 1px solid #ccc; background: #f9f9f9;
+  border: 1px solid #ccc; background: #f9f9f9; border-radius: 10px;
 ">
   <b><h3>Select First Server to start recording</h3></b>
   <!-- 
@@ -179,15 +222,18 @@
     <h2><input type="checkbox" id="deuceToggle" onchange="saveSettings()"> Enable Deuce/Advantage rules</h2>
 </label>
 
-<!--
-<div style="margin: 20px 0;">
-  <label><h2><input type="checkbox" id="tiebreakToggle" onchange="toggleTiebreak()"> Enable Tiebreak Mode</h2></label>
-  <select id="tiebreakLength" onchange="saveSettings()">
-    <option value="7">7-Point Tiebreak</option>
-    <option value="10">10-Point Tiebreak</option>
-  </select>
+
+<div id="matchControl" style="margin: 20px 0;">
+  <!--       style="font-size: 18px; padding: 10px 20px; 
+      font-weight: bold;
+      background-color: #d3d3d3; /* light grey */
+      color: black;
+      border: 4px solid #555;   /* thick border */
+      border-radius: 8px;" disabled
+  -->
+  <button id="startMatchBtn" onclick="startMatch()"  class="rect-btn" disabled>Start Match</button>
 </div>
--->
+
 <div style="margin: 20px 0;">
   <label><h2><input type="checkbox" id="tiebreakToggle" onchange="toggleTiebreak()"> Enable Tiebreak Mode</h2></label>
   <div style="margin-top: 10px;">
@@ -213,10 +259,14 @@
     </label>
 </div>
 
+<div id="setHistory" style="margin-bottom: 20px; font-weight: bold; border: 1px solid #ccc; background: #f9f9f9;">
+    <h2>Match Scores: <span id="setHistoryText">None</span></h2>
+</div>
 
-<div id="currentServerBox" style="margin-bottom: 10px; padding: 10px; border: 1px solid #ccc; background: #f9f9f9;">
-  <strong>Current Server:</strong> <span id="currentServerDisplay">Undefined...</span>
-  <button onclick="clickChangeServer()" style="margin-left: 10px;">Change Server</button>
+<!--background: #f9f9f9;-->
+<div id="currentServerBox" style="margin-bottom: 10px; padding: 2px; border: 1px solid #ccc; border-radius: 10px;">
+  <h3>Current Server:<span id="currentServerDisplay">Undefined...</span> </h3>
+  <button onclick="clickChangeServer()" style="margin-left: 5px;">Change Server</button>
 </div>
 
 
@@ -226,7 +276,7 @@
       <div class="score">Points: <span id="p1Points">0</span></div>
       <div class="score">Games: <span id="p1Games">0</span></div>
       <div class="score">Sets: <span id="p1Sets">0</span></div>
-      <button id="add-point-p1" onclick="addPoint('p1')">+ Point</button>
+      <button id="add-point-p1" class="square-btn"  onclick="addPoint('p1')"   >+ Point</button>
       <!-- <button onclick="resetPlayer(1)">Reset</button>  -->
     </div>
     <div class="player" >
@@ -234,10 +284,14 @@
       <div class="score">Points: <span id="p2Points">0</span></div>
       <div class="score">Games: <span id="p2Games">0</span></div>
       <div class="score">Sets: <span id="p2Sets">0</span></div>
-      <button id="add-point-p2" onclick="addPoint('p2')">+ Point</button>
+      <button id="add-point-p2" class="square-btn"   onclick="addPoint('p2')">+ Point</button>
       <!-- <button onclick="resetPlayer(2)">Reset</button> -->
     </div>
   </div>
+
+
+  <button id="endMatchBtn" onclick="clickEndMatch()" class="rect-btn" disabled>End Match</button>
+  <!-- style="font-size: 18px; padding: 10px 20px;" -->
 
   <div class="button-row">
     <button onclick="showStatsPopup()">Show Analytics</button>
@@ -266,7 +320,7 @@
 
   <div id="statsPopup" class="popup" style="display: none;">
     <div class="popup-content">
-      <h3>Match Statistics</h3>
+      <!-- <h3>Match Statistics</h3> -->
       <div id="statSummary" style="margin-bottom: 10px; font-weight: bold;"></div>
       <table id="statsTable" border="1" style="width: 100%; text-align: center;">
         <thead >
@@ -370,8 +424,10 @@
     let customTiebreakTarget = null;
 	  let tiebreakTarget = 7;
     let serverOverride = false;
-    const appVersion = "v2.3.2"; // or any version string you want
+    const appVersion = "v2.4.1"; // or any version string you want
     let undoStack =[];
+    let startTime = null;
+    let endTime = null;
 
     const score = {
       p1: { points: 0, games: 0, sets: 0, advantage: false, pointsWin: 0, totalWin:0 },
@@ -438,6 +494,7 @@
         tiebreakTarget = getTiebreakTarget();
         console.log("tiebreakTarget = ", tiebreakTarget);
         localStorage.setItem('tennisTiebreakTarget', tiebreakTarget);
+        
     }
 
     function load() {
@@ -1326,10 +1383,42 @@
       });        
     }
 
+    function clickEndMatch() {
+      showConfirmation("Really End the Match?", () => {
+        endMatch();
+      });  
+    }
+
+    function endMatch() {
+        const { date, time } = getCurrentDateTime();
+        endTime = { date, time };
+        if (score.p1.games !==0 || score.p2.games !== 0) recordSet();
+        console.log("Match ended at:", endTime);
+        exportCSV();
+        // check to update score board
+    }
+
+    function getCurrentDateTime() {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+      const dd = String(now.getDate()).padStart(2, '0');
+      const hh = String(now.getHours()).padStart(2, '0');
+      const min = String(now.getMinutes()).padStart(2, '0');
+
+      return {
+        date: `${yyyy}-${mm}-${dd}`,
+        time: `${hh}:${min}`
+      };
+    }
+
+
     function resetAll() {
       isTiebreak = false;
       customTiebreakTarget = null;
       serverOverride = false;
+      startTime = null;
+      endTime = null;
       score.p1 = { points: 0, games: 0, sets: 0, advantage: false,    pointsWin:0, totalWin:0};
       score.p2 = { points: 0, games: 0, sets: 0, advantage: false,    pointsWin:0, totalWin:0};
       score.setHistory = [];
@@ -1350,7 +1439,11 @@
       document.querySelectorAll('#match-conditions input[type="checkbox"]').forEach(cb => cb.checked = false);
       // Uncheck the "Who serves first?" radio buttons
       document.querySelectorAll('input[name="firstServer"]').forEach(r => {r.checked = false; r.disabled=false;});
+
       // Disable score buttons again
+      document.getElementById('startMatchBtn').textContent = "Start Match";
+      document.getElementById('startMatchBtn').disabled = true;
+      document.getElementById('endMatchBtn').disabled = true;
       document.getElementById('add-point-p1').disabled = true;
       document.getElementById('add-point-p2').disabled = true;
       HidePointHistory()
@@ -1371,6 +1464,9 @@
         csv += `Player 1 Name: ${playerNames['p1']}\n`;
         csv += `Player 2 Name: ${playerNames['p2']}\n\n`;
         csv += `First Server:, ${playerNames[getFirstServer()]}\n\n`;
+        csv += `Match Date,${endTime.date}\n`;
+        if (startTime) csv += `Start Time: ${startTime.time}\n`;
+        csv += `End Time: ${endTime.time}\n\n`;
 
         // Section 1: Set History
         csv += 'Set History\n';
@@ -1381,8 +1477,8 @@
         csv += '\n'; // Spacer
         // Section 2: Game Point History
         csv += 'Game Point History\n';
-        csv += `Game #, ${playerNames['p1']} Points, ${playerNames['p2']} Points\n`;
         csv += `Total Win, ${score.p1.totalWin}, ${score.p2.totalWin}\n`;
+        csv += `Game #, ${playerNames['p1']} Points, ${playerNames['p2']} Points\n`;
         score.gameHistory.forEach((entry, index) => {
             const gameLabel = entry.isTiebreak ? `${index + 1} (TB)` : index + 1;
             csv += `${gameLabel},${entry.p1Points},${entry.p2Points}\n`;
@@ -1391,7 +1487,7 @@
         if (pointHistory){
             // Header for Point-by-Point History
             csv += "\n\nPoint-by-Point History\n";
-            csv += "Set,Game,Server,Serve Type,Winner,Winning Reason,Losing Reason,Current Score\n";
+            csv += "Point Number, Set,Game,Server,Serve Type,Winner,Winning Reason,Losing Reason\n";
             pointHistory.forEach(p => {
             const winner = p.winner === 'p1' ? playerNames['p1'] : playerNames['p2']; //'Player 1' : 'Player 2';
             const loser = p.winner === 'p1' ? playerNames['p2'] : playerNames['p1']; //'Player 2' : 'Player 1';
@@ -1521,6 +1617,22 @@
       restoreCheckboxes('court', savedInfo.court);
       restoreCheckboxes('location', savedInfo.location);
       restoreCheckboxes('weather', savedInfo.weather);
+      // restore clickable button
+      document.getElementById('endMatchBtn').disabled = false;
+      startTime = JSON.parse(localStorage.getItem("matchStartTime"));
+    }
+
+    function startMatch(){
+        document.getElementById('add-point-p1').disabled = false;
+        document.getElementById('add-point-p2').disabled = false;
+        document.getElementById('endMatchBtn').disabled = false;
+        const button =   document.getElementById("startMatchBtn");
+        document.getElementById('startMatchBtn').disabled = true;
+        const { date, time } = getCurrentDateTime();
+        startTime = { date, time };
+        console.log("Match started at:", startTime);
+        button.textContent = `StartTime: ${startTime.time}`;
+        localStorage.setItem("matchStartTime", JSON.stringify(startTime));
     }
 
 
@@ -1548,8 +1660,9 @@
     // Detect first server selection and unlock scoring
     document.querySelectorAll('input[name="firstServer"]').forEach(radio => {
         radio.addEventListener('change', () => {
-        document.getElementById('add-point-p1').disabled = false;
-        document.getElementById('add-point-p2').disabled = false;
+        //document.getElementById('add-point-p1').disabled = false;
+        //document.getElementById('add-point-p2').disabled = false;
+        document.getElementById('startMatchBtn').disabled = false;
         // Lock the selection
         document.querySelectorAll('input[name="firstServer"]').forEach(r => r.disabled = true);
         score.firstServer = getFirstServer();
@@ -1585,6 +1698,7 @@
             console.log("Undo stack recovered from localStorage.");
             undoLastPoint();
             restoreMatchInfo();
+
           }
         } else {
           localStorage.removeItem("tennisMatchScoreBackup"); // User chooses to discard
