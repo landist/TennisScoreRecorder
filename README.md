@@ -6,7 +6,8 @@ This webpage app is a simple and rudimentary html file with scripts. It allows s
 
 - Free access, No installation, No registration, No login are required. No Ad. No tracking of any personal info. 
 - Data are located locally in user's browswer temporarily and are NOT saved unless the user export an CSV/Excel file locally anytime with the "Export CSV" button.
-- To start recording points, user need to select which player serve first in the match using the radio button.
+- To start recording score, user needs to select which player serve first in the match using the radio button. This will activate the Start Match button. When pressed, this   will record the start time of the match.
+- There is also an End Match button which will record the end match time, and then export a CSV for the data to save it locally. 
 - When Optional "Analytic Mode" is enabled, user can also record more technical details of each point regarding how it is won or lost, such as type of error, type of winner, serve type etc with the popup window of checkboxes. It can presents the technical statistics in a Popup window.
 - There is an optional point by point history at the bottom (which only refresh when you press the "show/hide" button again).
 - Duece/Advantage rule is available
