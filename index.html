@@ -355,6 +355,7 @@
             <label><input type="checkbox" name="winReason" value="Short Rally"> Short Rally</label><br>
             <label><input type="checkbox" name="winReason" value="Winner"> Winner</label><br>
             <label><input type="checkbox" name="strokeTech" value="Net"> Net</label><br>
+            <label><input type="checkbox" name="strokeTech" value="Lob"> Lob</label><br>
           </td>
           <td>
             <label><input type="checkbox" name="serveType" value="Second Serve"> 2nd Serve</label><br>
@@ -362,6 +363,7 @@
             <label><input type="checkbox" name="winReason" value="Long Rally"> Long Rally</label>
             <label><input type="checkbox" name="strokeTech" value="FH"> FH</label><br>
             <label><input type="checkbox" name="strokeTech" value="Slice"> Slice</label><br>
+            <label><input type="checkbox" name="strokeTech" value="DropShot"> DropShot</label><br>
           </td>
           <td>
             <label><input type="checkbox" name="serveType" value="Double Fault" id="DoubleFaultCheckbox"> Double Fault</label><br>
@@ -369,7 +371,7 @@
             <label><input type="checkbox" name="winReason" value="Ace" id="AceCheckbox"> Ace</label><br>
             <label><input type="checkbox" name="strokeTech" value="BH"> BH</label><br>
             <label><input type="checkbox" name="strokeTech" value="Smash"> Smash</label><br>
-
+            <label><input type="checkbox" name="strokeTech" value="Others"> Others</label><br>
           </td>
         </tr>
       </table> 
@@ -424,7 +426,7 @@
     let customTiebreakTarget = null;
 	  let tiebreakTarget = 7;
     let serverOverride = false;
-    const appVersion = "v2.4.2"; // or any version string you want
+    const appVersion = "v2.4.3"; // or any version string you want
     let undoStack =[];
     let startTime = null;
     let endTime = null;
@@ -952,6 +954,8 @@
         // Optionally reset checkboxes
         document.querySelectorAll('#analyticForm input[type="checkbox"]').forEach(cb => cb.checked = false);
         setMainButtonsDisabled(false);
+        // set Start Match button to be disabled during analytic data recording.
+        document.getElementById('startMatchBtn').disabled = true;
 
         updateCurrentServerDisplay();
     }
