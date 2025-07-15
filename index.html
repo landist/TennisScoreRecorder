@@ -290,7 +290,7 @@
   </div>
 
 
-  <button id="endMatchBtn" onclick="clickEndMatch()" class="rect-btn" disabled>End Match</button>
+  <button id="endMatchBtn" onclick="clickEndMatch()" class="rect-btn" disabled>End Match & Export Data</button>
   <!-- style="font-size: 18px; padding: 10px 20px;" -->
 
   <div class="button-row">
@@ -426,7 +426,7 @@
     let customTiebreakTarget = null;
 	  let tiebreakTarget = 7;
     let serverOverride = false;
-    const appVersion = "v2.4.3"; // or any version string you want
+    const appVersion = "v2.4.4"; // or any version string you want
     let undoStack =[];
     let startTime = null;
     let endTime = null;
@@ -1090,7 +1090,8 @@
         { label: 'Unforced Error-Smash', value: [p1["Unforced Error-Smash"] || 0, p2["Unforced Error-Smash"] || 0]},
         { label: 'Winner-FH', value: [p1["Winner-FH"] || 0, p2["Winner-FH"] || 0]},
         { label: 'Winner-BH', value: [p1["Winner-BH"] || 0, p2["Winner-BH"] || 0]},
-        { label: 'Winner-Net', value: [p1["Winner-Net"] || 0, p2["Winner-Net"] || 0]}      
+        { label: 'Winner-Net', value: [p1["Winner-Net"] || 0, p2["Winner-Net"] || 0]} ,     
+        { label: 'Winner-DropShot', value: [p1["Winner-DropShot"] || 0, p2["Winner-DropShot"] || 0]}    
       ];
 
       
@@ -1550,9 +1551,16 @@
               "Unforced Error-Slice-BH",  
               "Unforced Error-Slice",  
               "Unforced Error-Smash", 
+              "Unforced Error-DropShot", 
+              "Unforced Error-Lob",
+              "Unforced Error-Others",  
               "Winner-FH",
               "Winner-BH",
-              "Winner-Net"        
+              "Winner-Net",       
+              "Winner-Smash",  
+              "Winner-DropShot",
+              "Winner-Lob",
+              "Winner-Others"
             ];
 
             const printedKeys = new Set();
