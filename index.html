@@ -730,14 +730,8 @@
       console.log("State restored from undo.");
     }
 
-
-    function addPoint(player) {
-        saveToUndoStack();
-        const analyticMode = document.getElementById('analyticModeToggle').checked;
-        if (analyticMode) {
-            showAnalyticPopup(player);
-            return;
-        }
+    function registerBreakPoint(player){
+        // register break point and converted break point
         let server = getCurrentServer();
         let isBreakPoint = checkBreakPoint(server);
         //record break points
@@ -746,6 +740,17 @@
           score[receiver].breakpoints++;
         }
         if (server != player && isBreakPoint) { score[player].bpwin++;} //converted/win a  break point
+    }
+
+    function addPoint(player) {
+        saveToUndoStack();
+        const analyticMode = document.getElementById('analyticModeToggle').checked;
+        if (analyticMode) {
+            showAnalyticPopup(player);
+            return;
+        }
+
+        registerBreakPoint(player);
         incrementPoint(player);
 
         updateCurrentServerDisplay();
@@ -968,6 +973,9 @@
         }
         recordPointDetail(cur_point);
         addAnalyticData(cur_point);
+
+        // register break point 
+        registerBreakPoint(winnerID);
         // adjust point here when in analytical mode, after recordPoint due to the way it uses setHistory and gameHistory
         incrementPoint(winnerID);
         //printPointHistoryLog();
