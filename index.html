@@ -426,14 +426,14 @@
     let customTiebreakTarget = null;
 	  let tiebreakTarget = 7;
     let serverOverride = false;
-    const appVersion = "v2.4.4"; // or any version string you want
+    const appVersion = "v2.4.5"; // or any version string you want
     let undoStack =[];
     let startTime = null;
     let endTime = null;
 
     const score = {
-      p1: { points: 0, games: 0, sets: 0, advantage: false, pointsWin: 0, totalWin:0 },
-      p2: { points: 0, games: 0, sets: 0, advantage: false, pointsWin: 0, totalWin:0},
+      p1: { points: 0, games: 0, sets: 0, advantage: false, pointsWin: 0, totalWin:0, breakpoints:0, bpwin:0 },
+      p2: { points: 0, games: 0, sets: 0, advantage: false, pointsWin: 0, totalWin:0, breakpoints:0, bpwin:0 },
       setHistory: [],
       gameHistory: [] , // Stores {p1Points, p2Points} per game
       firstServer: null //getFirstServer()
@@ -608,6 +608,20 @@
     }
 
 
+    function checkBreakPoint(server) {
+      let receiver = server === 'p1' ? 'p2' : 'p1';
+      // not consider tiebreak situation for break point
+      if (! isTiebreak && ( ((!useDeuce) && score[receiver].points === 3) || 
+                    ( useDeuce && ((score[receiver].points === 3 && score[server].points < 3) || score[receiver].advantage) ) )
+          ) {
+        // Sudden death mode: receiver on 40 or // Deuce mode with Advantage rules
+          console.log("useDeuce=",useDeuce, " p1=", score.p1.points, " p2=", score.p2.points, " Adv", score.p1.advantage, score.p2.advantage);
+          return true;
+      }
+      return false;
+    }
+
+
     // expect player is string 'p1' or 'p2'
     function incrementPoint(player){
         const p = player === 'p1' ? 'p1' : 'p2';
@@ -724,7 +738,16 @@
             showAnalyticPopup(player);
             return;
         }
+        let server = getCurrentServer();
+        let isBreakPoint = checkBreakPoint(server);
+        //record break points
+        if (isBreakPoint) { 
+          let receiver = server === 'p1' ? 'p2' : 'p1';
+          score[receiver].breakpoints++;
+        }
+        if (server != player && isBreakPoint) { score[player].bpwin++;} //converted/win a  break point
         incrementPoint(player);
+
         updateCurrentServerDisplay();
     }
 
@@ -1073,6 +1096,7 @@
         { label: 'First Serve Win', value:  [`${p1["First Serve Win"] || 0} / ${p1["First Serve"] || 0}`, `${p2["First Serve Win"] || 0} / ${p2["First Serve"] || 0} `]},        
         { label: 'Second Serve', value:  [`${p1["Second Serve"] || 0} / ${p1_serve2_total}`, `${p2["Second Serve"] || 0} / ${p2_serve2_total}`] },
         { label: 'Second Serve Win', value:  [`${p1["Second Serve Win"] || 0} / ${p1["Second Serve"] || 0}`, `${p2["Second Serve Win"] || 0} / ${p2["Second Serve"] || 0}`] },  
+        { label: 'Break Points', value:[`${score.p1.bpwin} / ${score.p1.breakpoints}`, `${score.p2.bpwin} / ${score.p2.breakpoints}`]},
         { label: 'Double Fault', value: [p1["Double Fault"] || 0, p2["Double Fault"] || 0] },
         { label: 'ReturnServe Error', value: [p1["ReturnServe Error"] || 0, p2["ReturnServe Error"] || 0] },
         { label: 'Unforced Error', value: [p1["Unforced Error"] || 0, p2["Unforced Error"] || 0]},
@@ -1431,8 +1455,8 @@
       serverOverride = false;
       startTime = null;
       endTime = null;
-      score.p1 = { points: 0, games: 0, sets: 0, advantage: false,    pointsWin:0, totalWin:0};
-      score.p2 = { points: 0, games: 0, sets: 0, advantage: false,    pointsWin:0, totalWin:0};
+      score.p1 = { points: 0, games: 0, sets: 0, advantage: false,    pointsWin:0, totalWin:0, breakpoints:0, bpwin:0};
+      score.p2 = { points: 0, games: 0, sets: 0, advantage: false,    pointsWin:0, totalWin:0, breakpoints:0, bpwin:0};
       score.setHistory = [];
       score.gameHistory = [];
       score.firstServer = null; //getFirstServer();
@@ -1531,6 +1555,8 @@
             const p2_serve2_total = (p2Data["Second Serve"] || 0) + (p2Data["Double Fault"] || 0);
             csv += `Total First Serve, ${p1_serve1_total}, ${p2_serve1_total}\n`;
             csv += `Total Second Serve, ${p1_serve2_total}, ${p2_serve2_total}\n`;
+            csv += `Total Break Points, ${score.p1.breakpoints}, ${score.p2.breakpoints}\n`;
+            csv += `Converted Break Points, ${score.p1.bpwin}, ${score.p2.bpwin}\n`;
             const preferredOrder = [
               "First Serve",
               "First Serve Win",
