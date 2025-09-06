@@ -426,7 +426,7 @@
     let customTiebreakTarget = null;
 	  let tiebreakTarget = 7;
     let serverOverride = false;
-    const appVersion = "v2.4.5"; // or any version string you want
+    const appVersion = "v2.5.5"; // or any version string you want
     let undoStack =[];
     let startTime = null;
     let endTime = null;
@@ -1557,14 +1557,14 @@
 
             // 1. Preferred order of statistics
             csv += `Total Win, ${score.p1.totalWin},${score.p2.totalWin}\n`;
+            csv += `Total Break Points, ${score.p1.breakpoints}, ${score.p2.breakpoints}\n`;
+            csv += `Converted Break Points, ${score.p1.bpwin}, ${score.p2.bpwin}\n`;
             const p1_serve1_total = (p1Data["First Serve"] || 0) + (p1Data["Second Serve"] || 0) + (p1Data["Double Fault"] || 0);
             const p2_serve1_total = (p2Data["First Serve"] || 0) + (p2Data["Second Serve"] || 0) + (p2Data["Double Fault"] || 0);
             const p1_serve2_total = (p1Data["Second Serve"] || 0) + (p1Data["Double Fault"] || 0);
             const p2_serve2_total = (p2Data["Second Serve"] || 0) + (p2Data["Double Fault"] || 0);
             csv += `Total First Serve, ${p1_serve1_total}, ${p2_serve1_total}\n`;
             csv += `Total Second Serve, ${p1_serve2_total}, ${p2_serve2_total}\n`;
-            csv += `Total Break Points, ${score.p1.breakpoints}, ${score.p2.breakpoints}\n`;
-            csv += `Converted Break Points, ${score.p1.bpwin}, ${score.p2.bpwin}\n`;
             const preferredOrder = [
               "First Serve",
               "First Serve Win",
